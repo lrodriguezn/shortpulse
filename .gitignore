@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+
+# Docker
+.docker/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OpenSpec (tracked selectively)
+# openspec/changes/ is tracked (active changes)
+# openspec/changes/archive/ is tracked (audit trail)
+
+# Misc
+*.tsbuildinfo
+
+# Agent cache
+.atl/.skill-registry.cache.json

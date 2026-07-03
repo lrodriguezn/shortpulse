@@ -1,0 +1,19 @@
+{
+  "name": "shortpulse",
+  "version": "0.0.0",
+  "private": true,
+  "description": "URL shortener web app with analytics",
+  "license": "MIT",
+  "scripts": {
+    "dev": "echo 'Configure after workspace setup'",
+    "build": "echo 'Configure after workspace setup'",
+    "test": "echo 'Configure after workspace setup'",
+    "lint": "echo 'Configure after workspace setup'",
+    "format": "echo 'Configure after workspace setup'",
+    "typecheck": "echo 'Configure after workspace setup'"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

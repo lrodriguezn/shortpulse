@@ -1,0 +1,47 @@
+schema: spec-driven
+
+context: |
+  Tech stack: React + TanStack (Router/Query/Table) + TypeScript + Vite + TailwindCSS (frontend), Fastify + Drizzle ORM + TypeScript (backend), PostgreSQL
+  Architecture: Clean/Hexagonal — frontend and backend as separate packages or monorepo workspaces
+  Testing: Vitest (unit/integration), Playwright (E2E), strict TDD, 90% coverage minimum
+  Style: TailwindCSS (frontend), ESLint + Prettier (all TS), Husky + lint-staged + Conventional Commits
+  Deployment: Docker multi-stage + docker-compose (app + PostgreSQL), VPS + Dokploy
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Justify backend decisions with architecture criteria
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for redirect and analytics flows
+    - Document architecture decisions with rationale
+    - Define API contract (request/response schemas) explicitly
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Frontend and backend tasks can be parallelized when API contract is defined
+  apply:
+    - Follow existing code patterns
+    tdd: true
+    test_command: "pnpm test"
+  verify:
+    test_command: "pnpm test"
+    build_command: "pnpm build"
+    coverage_threshold: 90
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: true
+  runners:
+    unit_integration: vitest
+    e2e: playwright
+  coverage:
+    tool: "@vitest/coverage-v8"
+    threshold: 90
+  layers:
+    unit: true
+    integration: true
+    e2e: true
