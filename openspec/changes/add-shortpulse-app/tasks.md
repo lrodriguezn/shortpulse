@@ -84,8 +84,8 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 10: Docker
 
-- [ ] 10.1 `docker/Dockerfile` (multi-stage deps→build→runtime; `node:20-slim`; GeoLite2 optional); `.dockerignore`. [M]
-- [ ] 10.2 `docker/docker-compose.yml` (app + postgres + Node 20 fetch healthcheck) + `entrypoint.sh` (migrate → start). [M]
+- [x] 10.1 `docker/Dockerfile` (multi-stage deps→build→runtime; `node:20-slim`; GeoLite2 optional); `.dockerignore`. [M] *(slice 11 — four-stage Dockerfile (deps → build → prod-deps → runtime) on `node:20-slim`, pnpm 11.9.0 via corepack, Node 20 `fetch` healthcheck (design §11 fix #4), `.dockerignore` excludes node_modules/dist/.env/tests/e2e/openspec/docs/+\*.mmdb. The static SPA serving is wired via `@fastify/static` in `packages/backend/src/presentation/static-plugin.ts` + a `preHandler` in `redirect-route.ts` that delegates SPA paths and invalid slugs to the not-found handler. The preHandler approach was required because `/:slug` was matching `GET /` with an empty slug and beating the static plugin's `*` wildcard. 13 new tests (8 static-plugin + 2 redirect reserved-spa + 3 server SPA integration).)*
+- [x] 10.2 `docker/docker-compose.yml` (app + postgres + Node 20 fetch healthcheck) + `entrypoint.sh` (migrate → start). [M] *(slice 11 — compose with two services (app + postgres:16-alpine), pgdata named volume, `pg_isready` healthcheck on postgres, `node -e fetch` healthcheck on app, `depends_on.condition: service_healthy`, `restart: unless-stopped`. `entrypoint.sh` validates `DATABASE_URL`, runs Drizzle migrations, then `exec node ...` so SIGTERM reaches the Fastify onSignal handler. 11 new shell + YAML tests.)*
 
 ## Phase 11: E2E (Playwright)
 
