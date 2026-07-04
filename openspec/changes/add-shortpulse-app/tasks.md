@@ -46,10 +46,10 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 4: Backend application
 
-- [ ] 4.1 `application/ports.ts` — `Geolocator.lookup(ip)`, `UaParser.parse(ua)`. [S]
-- [ ] 4.2 `application/create-link.use-case.ts` — validate → insert; unique-violation retry auto-gen up to 3×; throws `ConflictError` (custom) or `SlugGenerationError` (auto). [M]
-- [ ] 4.3 `application/redirect.use-case.ts` — findBySlug (lowercased) → 404; else record analytics via ports then return `original_url`. [M]
-- [ ] 4.4 `application/{list-links,delete-link,get-analytics-summary,list-analytics,get-timeseries}.use-case.ts` — pagination, soft-delete idempotency, `(deleted link)` rendering, 30-day default timeseries. [M]
+- [x] 4.1 `application/ports.ts` — `Geolocator.lookup(ip)`, `UaParser.parse(ua)`. [S] *(implemented in slice 4 as `domain/ports/{geolocator,ua-parser}.ts` per the orchestrator's design — see slice-4 apply-progress)*
+- [x] 4.2 `application/create-link.use-case.ts` — validate → insert; unique-violation retry auto-gen up to 3×; throws `ConflictError` (custom) or `SlugGenerationError` (auto). [M] *(slice 5a)*
+- [x] 4.3 `application/redirect.use-case.ts` — findBySlug (lowercased) → 404; else record analytics via ports then return `original_url`. [M] *(slice 5a)*
+- [x] 4.4 `application/{list-links,delete-link,get-analytics-summary,list-analytics,get-timeseries}.use-case.ts` — pagination, soft-delete idempotency, `(deleted link)` rendering, 30-day default timeseries. [M] *(slice 5a: list-links + delete-link; slice 5b: 3 analytics use-cases)*
 
 ## Phase 5: Backend infrastructure
 
