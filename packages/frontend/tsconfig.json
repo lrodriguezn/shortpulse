@@ -13,10 +13,9 @@
     "moduleResolution": "Bundler",
     "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"],
-      "@shortpulse/shared": ["../shared/src/index.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [{ "path": "./tsconfig.node.json" }, { "path": "../shared" }]
 }
