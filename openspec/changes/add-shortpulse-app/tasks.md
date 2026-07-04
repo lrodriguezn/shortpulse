@@ -59,10 +59,10 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 6: Backend presentation
 
-- [ ] 6.1 `presentation/error-mapper.ts` — domain errors → RFC 7807 (400/404/409/500). [S]
-- [ ] 6.2 `presentation/plugins/health.plugin.ts` — `GET /health` runs `SELECT 1`; 200/503. [S]
-- [ ] 6.3 `presentation/plugins/{links,redirect,analytics}.plugin.ts` + `static.plugin.ts` (serves `dist/` SPA fallback). Reserved routes registered before redirect catch-all. [M]
-- [ ] 6.4 `container.ts` (DI) + `index.ts` (migrate → listen); all 8 endpoints integration-tested. [M]
+- [x] 6.1 `presentation/error-mapper.ts` — domain errors → RFC 7807 (400/404/409/500). [S] *(slice 7 WU1 — error-mapper + 9 TDD tests)*
+- [x] 6.2 `presentation/plugins/health.plugin.ts` — `GET /health` runs `SELECT 1`; 200/503. [S] *(slice 7 WU5 — health-route + 3 TDD tests)*
+- [x] 6.3 `presentation/plugins/{links,redirect,analytics}.plugin.ts` + `static.plugin.ts` (serves `dist/` SPA fallback). Reserved routes registered before redirect catch-all. [M] *(slice 7 WU2/3/4 — links/redirect/analytics routes + 29 TDD tests; static deferred to Phase 11)*
+- [x] 6.4 `container.ts` (DI) + `index.ts` (migrate → listen); all 8 endpoints integration-tested. [M] *(slice 6 WU6 — container; slice 7 WU6 — buildApp/startServer/index.ts + 6 TDD tests)*
 
 ## Phase 7: Frontend scaffold
 
