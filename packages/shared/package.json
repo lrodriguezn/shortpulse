@@ -19,5 +19,8 @@
     "build": "tsc -b",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
   }
 }
