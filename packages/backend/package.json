@@ -9,6 +9,21 @@
     "dev": "echo 'backend dev: configure in Phase 6'",
     "build": "tsc -b",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@shortpulse/shared": "workspace:*",
+    "drizzle-orm": "^0.36.4",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^10.13.2",
+    "@types/pg": "^8.11.10",
+    "dotenv": "^16.4.7",
+    "drizzle-kit": "^0.28.1",
+    "testcontainers": "^10.13.2"
   }
 }

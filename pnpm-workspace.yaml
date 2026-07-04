@@ -2,6 +2,10 @@ packages:
   - 'packages/*'
 
 # pnpm 11+ uses `allowBuilds` to whitelist packages whose install scripts
-# may run. We only need esbuild (native binary download).
+# may run. We need esbuild (native binary download) and the testcontainers
+# native binding helpers (cpu-features, protobufjs, ssh2).
 allowBuilds:
+  cpu-features: true
   esbuild: true
+  protobufjs: true
+  ssh2: true
