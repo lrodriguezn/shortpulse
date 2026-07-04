@@ -110,6 +110,20 @@ class InMemoryAnalyticsRepository implements AnalyticsRepository {
   ): Promise<TimeseriesBucket[]> {
     return [];
   }
+
+  async listWithLinkLabel(
+    query: AnalyticsListQuery,
+  ): Promise<{ data: Array<AnalyticsEvent & { slug: string | null }>; total: number }> {
+    const start = (query.page - 1) * query.pageSize;
+    return {
+      // The in-memory mock has no link table to join against, so
+      // `slug` is always `null` (which the use-case maps to
+      // "(deleted link)"). The Drizzle Phase 5 impl will fill this
+      // with the real slug or `null` for soft-deleted rows.
+      data: this.events.slice(start, start + query.pageSize).map((e) => ({ ...e, slug: null })),
+      total: this.events.length,
+    };
+  }
 }
 
 class StaticGeolocator implements Geolocator {
@@ -289,6 +303,62 @@ describe('AnalyticsRepository contract (via InMemoryAnalyticsRepository)', () =>
     const q: TimeseriesQuery = { granularity: 'day', dateRange: range };
     const buckets: TimeseriesBucket[] = await repo.getTimeseries(q.granularity, q.dateRange);
     expect(Array.isArray(buckets)).toBe(true);
+  });
+
+  it('listWithLinkLabel returns events paired with their slug (or null when deleted)', async () => {
+    // Spec analytics #3 + #5: events list shows slug OR "(deleted link)"
+    // for soft-deleted links. The Drizzle impl (Phase 5) does a
+    // LEFT JOIN ... COALESCE(slug, NULL) — the interface surfaces the
+    // raw `slug: string | null` so the application-layer use-case can
+    // own the spec-locked "(deleted link)" literal (obs #7).
+    //
+    // `typedRepo` is bound to the `AnalyticsRepository` INTERFACE so
+    // this test only passes if the interface declares
+    // `listWithLinkLabel` — the mock's runtime class can have any
+    // shape, but a caller that consumes only the interface will fail
+    // to compile without the method.
+    const typedRepo: AnalyticsRepository = repo;
+    const live = createAnalyticsEvent({
+      id: '11111111-1111-4111-8111-aaaaaaaaaaaa',
+      linkId: LINK_ID,
+      timestamp: FIXED_DATE,
+      ip: '1.2.3.4',
+      userAgent: 'Mozilla/5.0',
+      referer: null,
+      country: 'US',
+      city: 'San Francisco',
+      browser: 'Chrome',
+    });
+    await typedRepo.save(live);
+    const result = await typedRepo.listWithLinkLabel({ page: 1, pageSize: 10 });
+    expect(result.data).toHaveLength(1);
+    // `slug` is the join field — `null` for the in-memory mock (the
+    // mock has no link table to join against). The Phase 5 Drizzle
+    // impl will populate this with the real slug or `null` for
+    // soft-deleted rows.
+    expect(result.data[0]).toMatchObject({
+      id: live.id,
+      linkId: LINK_ID,
+    });
+    expect(result.data[0]!.slug).toBeNull();
+  });
+
+  it('listWithLinkLabel supports the same query shape as list (linkId / dateFrom / dateTo / country / page / pageSize)', async () => {
+    // The application layer forwards the same AnalyticsListQuery to
+    // both methods — the contract test confirms the new method
+    // accepts the full query type, not a subset. The interface-typed
+    // reference enforces this.
+    const typedRepo: AnalyticsRepository = repo;
+    const result = await typedRepo.listWithLinkLabel({
+      page: 2,
+      pageSize: 5,
+      linkId: LINK_ID,
+      dateFrom: FIXED_DATE,
+      dateTo: new Date('2026-12-31T00:00:00.000Z'),
+      country: 'US',
+    });
+    expect(result.total).toBe(0);
+    expect(result.data).toHaveLength(0);
   });
 });
 

@@ -80,6 +80,14 @@ class RecordingAnalyticsRepository implements AnalyticsRepository {
   async getTimeseries(): Promise<TimeseriesBucket[]> {
     return [];
   }
+  async listWithLinkLabel(
+    _q: AnalyticsListQuery,
+  ): Promise<{ data: Array<AnalyticsEvent & { slug: string | null }>; total: number }> {
+    return {
+      data: this.saved.map((e) => ({ ...e, slug: null })),
+      total: this.saved.length,
+    };
+  }
 }
 
 class StaticGeolocator implements Geolocator {
