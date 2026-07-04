@@ -1,0 +1,101 @@
+# ShortPulse — production Docker Compose.
+#
+# One command to bring the whole stack up:
+#   `docker compose -f docker/docker-compose.yml --env-file .env up`
+#
+# The app service reads the same `.env` the local backend uses
+# (DATABASE_URL, PORT, BASE_URL, GEOIP_DB_PATH) so dev and prod
+# share configuration. The `app` service's DATABASE_URL is
+# rewritten to point at the in-network `postgres` hostname (the
+# local `.env` has `localhost` — the compose network uses the
+# service name).
+#
+# Healthchecks:
+#   - `postgres` uses `pg_isready` (the standard probe).
+#   - `app` uses Node 20's global `fetch` against `/health` — no
+#     `wget`/`curl` in `node:20-slim` (design §11 fix #4).
+#
+# Restart policy: `unless-stopped` — the container restarts on
+# crash, reboot, or `docker compose up` after a stop, but NOT when
+# the operator explicitly stops it (e.g. during deploys).
+#
+# Spec references:
+#  - `openspec/changes/add-shortpulse-app/design.md` §11 (Docker
+#    strategy) + §1 (single container serves SPA + API)
+#  - `openspec/changes/add-shortpulse-app/tasks.md` Phase 10
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: shortpulse/app:latest
+    container_name: shortpulse-app
+    restart: unless-stopped
+    # Map ${PORT:-3000} on the host to ${PORT:-3000} in the container.
+    # The `:-3000` default lets Dokploy / operators override PORT
+    # in the environment without editing this file.
+    ports:
+      - '${PORT:-3000}:${PORT:-3000}'
+    environment:
+      # DATABASE_URL is the in-network connection string — the
+      # postgres service is reachable as `postgres:5432` from any
+      # container on the default compose network. Credentials
+      # match the `postgres` service's POSTGRES_* env vars below.
+      DATABASE_URL: postgresql://shortpulse:shortpulse@postgres:5432/shortpulse
+      PORT: '${PORT:-3000}'
+      BASE_URL: '${BASE_URL:-http://localhost:3000}'
+      # Optional — GEOIP_DB_PATH is only meaningful when a
+      # GeoLite2-City.mmdb is mounted into the container. The
+      # default below points at a path the operator can bind-mount
+      # to (commented out for the MVP — the geolocator degrades to
+      # null-lookups when the file is absent, per design §9).
+      GEOIP_DB_PATH: '${GEOIP_DB_PATH:-/app/geoip/GeoLite2-City.mmdb}'
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        # Don't start the app until Postgres is healthy (pg_isready
+        # returns 0). Without this, the app would race the DB and
+        # crash on first boot.
+        condition: service_healthy
+    healthcheck:
+      # `node -e` runs an inline script using Node 20's global
+      # `fetch`. No external binaries needed. Exits 0 on 2xx,
+      # 1 on any other status or network error.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # `start_period` covers the time the entrypoint takes to run
+      # migrations + boot Fastify. 10s is generous for a fresh DB
+      # and tight enough to catch a misconfigured env.
+      start_period: 10s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: shortpulse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shortpulse
+      POSTGRES_PASSWORD: shortpulse
+      POSTGRES_DB: shortpulse
+    volumes:
+      # Named volume — survives `docker compose down` (only
+      # `down -v` removes it). For Dokploy this is a bind-mount
+      # to a host path; the operator can override.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` is bundled with the postgres image. Returns
+      # 0 when the server is accepting connections.
+      test: ['CMD-SHELL', 'pg_isready -U shortpulse -d shortpulse']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    # Named volume managed by Docker. Survives container restarts.

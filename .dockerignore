@@ -1,0 +1,106 @@
+# Files excluded from the Docker build context.
+#
+# The Dockerfile's `COPY` directives pull in only what they need
+# (package.jsons, source, lockfile). This list excludes everything
+# that would otherwise bloat the context and slow down the build:
+#
+# - `node_modules` are excluded from the COPY layer and installed
+#   inside the image via pnpm (so the host's platform-specific
+#   binaries don't leak into a linux image).
+# - `dist` is excluded because the image builds fresh from source.
+# - `.git`, `.codegraph`, IDE files, etc. are noise.
+# - `.env` is excluded so secrets never leak into the build context
+#   (compose reads `.env` at runtime via `env_file`, not at build).
+# - `coverage` and `tests` are CI-only artefacts.
+# - `*.mmdb` is the MaxMind GeoLite2 binary — mounted at runtime
+#   (compose), not baked into the image.
+# - `openspec` and `docs` are SDD artefacts, not part of the
+#   runtime / build.
+
+# Dependencies
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build outputs (the image builds fresh)
+dist
+**/dist
+*.tsbuildinfo
+
+# Environment + secrets
+.env
+.env.*
+!.env.example
+
+# VCS + tooling metadata
+.git
+.gitignore
+.gitattributes
+.codegraph
+.idea
+.vscode
+.DS_Store
+*.swp
+*.swo
+
+# Test artefacts
+coverage
+**/coverage
+.nyc_output
+**/.nyc_output
+*.lcov
+
+# Test source (not needed at runtime or build)
+tests
+**/tests
+**/*.test.ts
+**/*.test.tsx
+e2e
+**/e2e
+**/*.e2e.spec.ts
+**/*.spec.ts
+
+# SDD artefacts (design, proposal, specs)
+openspec
+docs
+
+# Documentation
+README.md
+LICENSE
+CHANGELOG.md
+
+# CI / CD
+.github
+.gitlab-ci.yml
+.circleci
+.travis.yml
+
+# Husky + lint-staged (host-only)
+.husky
+.lintstagedrc.json
+commitlint.config.js
+.eslintrc.cjs
+eslint.config.js
+.prettierrc*
+.prettierignore
+
+# Logs
+*.log
+logs
+**/logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS noise
+Thumbs.db
+
+# GeoIP (mounted at runtime, not baked in)
+*.mmdb
+geoip
+
+# Docker meta (don't recurse)
+Dockerfile
+docker-compose*.yml
+.dockerignore
