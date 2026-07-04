@@ -40,9 +40,9 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 3: Backend domain (pure)
 
-- [ ] 3.1 `domain/slug.ts` — `normalize` + `validate` (regex, length 3-20, no leading/trailing hyphen, reserved case-folded); throws `BadRequestError`/`ConflictError`. [S]
-- [ ] 3.2 `domain/slug-generator.ts` — `generateSlug()` over `crypto.randomBytes`, length 7, draws from `AUTO_SLUG_ALPHABET`. [S]
-- [ ] 3.3 `domain/{url-validator,link,analytics-event,errors,repositories}.ts` — `Link`, `AnalyticsEvent`, `UrlValidator`, `NotFoundError`/`ConflictError`/`BadRequestError`/`SlugGenerationError`, `LinkRepository`/`AnalyticsRepository` interfaces. [M]
+- [x] 3.1 `domain/slug.ts` — `normalize` + `validate` (regex, length 3-20, no leading/trailing hyphen, reserved case-folded); throws `BadRequestError`/`ConflictError`. [S]
+- [x] 3.2 `domain/slug-generator.ts` — `generateSlug()` over `crypto.randomBytes`, length 7, draws from `AUTO_SLUG_ALPHABET`. [S]
+- [x] 3.3 `domain/{url-validator,link,analytics-event,errors,repositories}.ts` — `Link`, `AnalyticsEvent`, `UrlValidator`, `NotFoundError`/`ConflictError`/`BadRequestError`/`SlugGenerationError`, `LinkRepository`/`AnalyticsRepository` interfaces. [M]
 
 ## Phase 4: Backend application
 
