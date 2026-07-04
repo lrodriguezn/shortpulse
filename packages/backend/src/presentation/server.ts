@@ -6,6 +6,10 @@
  *  - Registers the route plugins (links, redirect, analytics, health)
  *    in the order required by the spec (reserved routes BEFORE
  *    the redirect catch-all).
+ *  - Registers the static plugin (serves the built SPA + the SPA
+ *    fallback via `setNotFoundHandler`). When the frontend `dist/`
+ *    directory is missing (dev mode without a build) the plugin
+ *    silently skips and only the API is served.
  *  - Sets up the production error handler — domain errors thrown
  *    by use-cases are mapped to RFC 7807 problem-details responses
  *    via the `error-mapper` (anywhere they aren't already mapped
@@ -23,11 +27,14 @@
  * Reserved routes (`/api/*`, `/health`, `/analytics`) are registered
  * before the redirect catch-all so a request to `GET /analytics`
  * never reaches the slug handler (spec links scenario: "Reserved
- * route does not redirect").
+ * route does not redirect"). The redirect route ALSO delegates
+ * reserved SPA slugs (`/analytics`, `/favicon`, …) to the not-found
+ * handler so the SPA can serve them — see `redirect-route.ts`.
  *
  * Spec references:
- *  - `openspec/changes/add-shortpulse-app/design.md` §5 (API contract)
- *    + §11 (Docker entrypoint)
+ *  - `openspec/changes/add-shortpulse-app/design.md` §1 (single
+ *    container serves SPA + API) + §5 (API contract) + §11 (Docker
+ *    entrypoint)
  */
 import { sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -39,11 +46,19 @@ import { healthRoute, type HealthDbProbe } from './health-route.js';
 import { linksRoutes } from './links-routes.js';
 import { analyticsRoutes } from './analytics-routes.js';
 import { redirectRoute } from './redirect-route.js';
+import { registerStaticPlugin } from './static-plugin.js';
 import { mapDomainError } from './error-mapper.js';
 
 export interface BuildAppOptions {
   /** Optional logger flag — disabled by default in tests. */
   logger?: boolean;
+  /**
+   * Absolute path to the built frontend `dist/`. Overrides
+   * `FRONTEND_DIST_PATH` when set; the plugin otherwise falls
+   * back to `<cwd>/frontend/dist` and silently skips registration
+   * if the path does not exist.
+   */
+  frontendDistPath?: string;
 }
 
 /**
@@ -98,6 +113,14 @@ export async function buildApp(
   await app.register(healthRoute, { ping });
   await app.register(redirectRoute, { useCases: container.useCases });
 
+  // Static plugin LAST — its `setNotFoundHandler` is the SPA
+  // fallback (serves `index.html` for unmatched non-API paths).
+  // The plugin silently skips when the dist directory is missing
+  // (e.g. dev mode without a built SPA), so this is always safe.
+  await registerStaticPlugin(app, {
+    ...(options.frontendDistPath !== undefined ? { distPath: options.frontendDistPath } : {}),
+  });
+
   return app;
 }
 
@@ -122,7 +145,12 @@ export async function startServer(): Promise<StartServerResult> {
   // a stable seam.
   (container as unknown as { _db: ShortPulseDbShape })._db = db;
 
-  const server = await buildApp(container, { logger: true });
+  const server = await buildApp(container, {
+    logger: true,
+    ...(process.env['FRONTEND_DIST_PATH'] !== undefined
+      ? { frontendDistPath: process.env['FRONTEND_DIST_PATH'] }
+      : {}),
+  });
   await server.listen({ port, host: '0.0.0.0' });
 
   const close = async (): Promise<void> => {

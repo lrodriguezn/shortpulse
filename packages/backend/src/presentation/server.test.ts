@@ -24,6 +24,10 @@
  *  - `openspec/specs/health/spec.md` + `openspec/specs/links/spec.md`
  *    + `openspec/specs/analytics/spec.md`
  */
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { buildApp, startServer } from './server.js';
@@ -116,6 +120,92 @@ describe('buildApp', () => {
     expect(body.status).toBe(400);
     expect(body.title).toBe('Bad Request');
     await app.close();
+  });
+
+  it('serves the SPA index.html for GET / when a frontend dist is provided', async () => {
+    // Spin up a minimal dist fixture and pass it to `buildApp`.
+    // The static plugin registers @fastify/static + a not-found
+    // handler that serves `index.html` for unmatched SPA paths.
+    const distPath = mkdtempSync(join(tmpdir(), 'sp-server-'));
+    writeFileSync(
+      join(distPath, 'index.html'),
+      '<!doctype html><html><head><title>SPA</title></head><body>App</body></html>',
+    );
+    mkdirSync(join(distPath, 'assets'));
+    writeFileSync(join(distPath, 'assets', 'app.js'), 'console.log("app");');
+
+    try {
+      const container = createContainer({
+        db: stubDb(),
+        baseUrl: 'http://localhost:3000',
+      });
+      const app = await buildApp(container, { frontendDistPath: distPath });
+
+      const response = await app.inject({ method: 'GET', url: '/' });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-type']).toMatch(/text\/html/);
+      expect(response.body).toContain('<title>SPA</title>');
+
+      await app.close();
+    } finally {
+      rmSync(distPath, { recursive: true, force: true });
+    }
+  });
+
+  it('serves the SPA index.html for GET /analytics (reserved SPA path)', async () => {
+    // `/analytics` is a FE route. The redirect route short-circuits
+    // reserved SPA slugs via `reply.callNotFound()`; the static
+    // plugin's not-found handler then serves `index.html`.
+    const distPath = mkdtempSync(join(tmpdir(), 'sp-server-'));
+    writeFileSync(
+      join(distPath, 'index.html'),
+      '<!doctype html><html><head><title>SPA</title></head><body>App</body></html>',
+    );
+
+    try {
+      const container = createContainer({
+        db: stubDb(),
+        baseUrl: 'http://localhost:3000',
+      });
+      const app = await buildApp(container, { frontendDistPath: distPath });
+
+      const response = await app.inject({ method: 'GET', url: '/analytics' });
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toContain('<title>SPA</title>');
+
+      await app.close();
+    } finally {
+      rmSync(distPath, { recursive: true, force: true });
+    }
+  });
+
+  it('still returns 404 problem-details for unmatched API paths when the SPA is mounted', async () => {
+    // The static plugin's not-found handler MUST distinguish API
+    // paths from SPA paths — otherwise `/api/nonexistent` would
+    // serve `index.html` and the FE would try to parse it as JSON.
+    const distPath = mkdtempSync(join(tmpdir(), 'sp-server-'));
+    writeFileSync(
+      join(distPath, 'index.html'),
+      '<!doctype html><html><head><title>SPA</title></head><body>App</body></html>',
+    );
+
+    try {
+      const container = createContainer({
+        db: stubDb(),
+        baseUrl: 'http://localhost:3000',
+      });
+      const app = await buildApp(container, { frontendDistPath: distPath });
+
+      const response = await app.inject({ method: 'GET', url: '/api/nonexistent' });
+      expect(response.statusCode).toBe(404);
+      const body = response.json();
+      expect(body.status).toBe(404);
+      expect(body.title).toBe('Not Found');
+
+      await app.close();
+    } finally {
+      rmSync(distPath, { recursive: true, force: true });
+    }
   });
 });
 

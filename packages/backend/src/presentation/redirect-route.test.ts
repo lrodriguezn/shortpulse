@@ -186,4 +186,48 @@ describe('redirect-route', () => {
     expect(response.json().detail).toBe('Error interno del servidor');
     await testApp.close();
   });
+
+  it('delegates to the not-found handler for reserved SPA slugs (e.g. /analytics)', async () => {
+    // The redirect route is the catch-all for `GET /:slug`. When
+    // the path matches a reserved route (`/analytics`, `/favicon`,
+    // etc.) the slug is NOT a real link — the route delegates to
+    // Fastify's not-found handler, which (when the static plugin
+    // is registered) serves the SPA's `index.html`.
+    //
+    // Here we test in isolation: the route must call
+    // `reply.callNotFound()` instead of invoking the use case.
+    const { stubs, redirect } = buildStubs();
+    const testApp = await buildApp(stubs);
+
+    const response = await testApp.inject({
+      method: 'GET',
+      url: '/analytics',
+      remoteAddress: '1.2.3.4',
+    });
+
+    // The test app has no custom not-found handler, so Fastify's
+    // default 404 fires. The use case is NEVER called.
+    expect(response.statusCode).toBe(404);
+    expect(redirect).not.toHaveBeenCalled();
+    await testApp.close();
+  });
+
+  it('delegates to the not-found handler for reserved slugs regardless of case (case-folded match)', async () => {
+    // RESERVED_ROUTES is matched case-insensitively: `Analytics`
+    // and `ANALYTICS` are also reserved. The user might type
+    // `example.com/Analytics` and we don't want to 302 them
+    // somewhere random.
+    const { stubs, redirect } = buildStubs();
+    const testApp = await buildApp(stubs);
+
+    const response = await testApp.inject({
+      method: 'GET',
+      url: '/Analytics',
+      remoteAddress: '1.2.3.4',
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(redirect).not.toHaveBeenCalled();
+    await testApp.close();
+  });
 });
