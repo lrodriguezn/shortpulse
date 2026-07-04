@@ -1,0 +1,29 @@
+/**
+ * E2E tsconfig — type-checks the Playwright spec files.
+ *
+ * The E2E specs import from `@playwright/test` (devDep) and from
+ * `@shortpulse/shared` (workspace) but DO NOT import from the FE
+ * or BE source directly — the tests treat the running stack as a
+ * black box and interact only through the browser + the public
+ * API. Keeping a separate tsconfig (rather than reusing the FE's)
+ * makes the boundary explicit: no React, no Fastify, no Drizzle
+ * types leak into the E2E layer.
+ *
+ * The root `tsconfig.json` references this file as a project so
+ * `pnpm typecheck` (which runs `tsc -b`) type-checks the E2E
+ * suite as part of the normal CI gate.
+ */
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist-types",
+    "rootDir": ".",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist-types"]
+}
