@@ -29,5 +29,8 @@ export { normalizeSlug, isValidCustomSlug, isReservedSlug, validateCustomSlug } 
 // Slug generator
 export { generateRandomSlug } from './slug-generator.js';
 
+// URL helpers
+export { isValidHttpsUrl } from './url.js';
+
 // Zod schemas (single source of truth for the FE/BE contract)
 export * from './schemas/index.js';
