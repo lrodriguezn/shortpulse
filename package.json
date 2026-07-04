@@ -5,15 +5,21 @@
   "description": "URL shortener web app with analytics",
   "license": "MIT",
   "scripts": {
-    "dev": "echo 'Configure after workspace setup'",
-    "build": "echo 'Configure after workspace setup'",
-    "test": "echo 'Configure after workspace setup'",
-    "lint": "echo 'Configure after workspace setup'",
-    "format": "echo 'Configure after workspace setup'",
-    "typecheck": "echo 'Configure after workspace setup'"
+    "dev": "pnpm -r --parallel --if-present run dev",
+    "build": "pnpm -r --if-present run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "echo 'lint: configure in WU2'",
+    "format": "echo 'format: configure in WU2'",
+    "typecheck": "tsc -b"
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
   }
 }

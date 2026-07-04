@@ -1,0 +1,14 @@
+{
+  "name": "@shortpulse/backend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ShortPulse backend (Fastify + Drizzle).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "echo 'backend dev: configure in Phase 6'",
+    "build": "tsc -b",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

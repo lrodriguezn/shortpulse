@@ -1,0 +1,13 @@
+{
+  "name": "@shortpulse/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ShortPulse frontend (Vite + React + TanStack).",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'frontend dev: configure in Phase 7'",
+    "build": "echo 'frontend build: configure in Phase 7'",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}
