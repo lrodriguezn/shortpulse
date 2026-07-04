@@ -101,8 +101,9 @@ COPY --from=build /app/packages/backend/ ./packages/backend/
 # `--prod` drops devDependencies (vitest, @testcontainers/*,
 # drizzle-kit, eslint, etc.). The result is a slimmed `node_modules`
 # that the runtime image copies in.
+# `CI=true` prevents pnpm from aborting on non-TTY prompts.
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --offline --frozen-lockfile --prod
+    CI=true pnpm install --offline --frozen-lockfile --prod
 
 # =============================================================================
 # Stage 4: runtime — the final production image
