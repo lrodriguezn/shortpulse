@@ -28,10 +28,10 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 1: packages/shared
 
-- [ ] 1.1 `schemas/link.ts` — `createLinkSchema` (http(s) refine + slug regex `^(?!-)[a-z0-9-]{3,20}(?<!-)$`), `linkResponseSchema`, `listLinksQuerySchema`. [S]
-- [ ] 1.2 `schemas/{analytics,health,problem}.ts` — `summarySchema`, `eventsQuerySchema`, `timeseriesQuerySchema`, `eventRowSchema`, `timeseriesRowSchema`, `healthResponseSchema`, `problemDetailsSchema` (RFC 7807). [M]
-- [ ] 1.3 `constants/{reserved-routes,slug}.ts` — `RESERVED_ROUTES`, 54-char `AUTO_SLUG_ALPHABET`, `AUTO_SLUG_LENGTH=7`, `CUSTOM_SLUG_REGEX`. [S]
-- [ ] 1.4 `index.ts` + `types.ts` re-exports; `pnpm --filter shared test` ≥90%. [S]
+- [x] 1.1 `schemas/link.ts` — `createLinkSchema` (http(s) refine + slug regex `^(?!-)[a-z0-9-]{3,20}(?<!-)$`), `linkResponseSchema`, `listLinksQuerySchema`. [S]
+- [x] 1.2 `schemas/{analytics,health,problem}.ts` — `summarySchema`, `eventsQuerySchema`, `timeseriesQuerySchema`, `eventRowSchema`, `timeseriesRowSchema`, `healthResponseSchema`, `problemDetailsSchema` (RFC 7807). [M]
+- [x] 1.3 `constants/{reserved-routes,slug}.ts` — `RESERVED_ROUTES`, 54-char `AUTO_SLUG_ALPHABET`, `AUTO_SLUG_LENGTH=7`, `CUSTOM_SLUG_REGEX`. [S]
+- [x] 1.4 `index.ts` + `types.ts` re-exports; `pnpm --filter shared test` ≥90%. [S]
 
 ## Phase 2: Database + migrations
 
