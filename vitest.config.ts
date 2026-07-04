@@ -16,6 +16,7 @@ export default defineConfig({
   test: {
     include: [
       'tests/**/*.test.ts',
+      'docker/**/*.test.ts',
       'packages/*/tests/**/*.test.ts',
       'packages/*/src/**/*.test.{ts,tsx}',
     ],
