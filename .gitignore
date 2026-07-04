@@ -47,3 +47,4 @@ pnpm-debug.log*
 # Agent cache
 .atl/.skill-registry.cache.json
 .codegraph/
+dist-config/

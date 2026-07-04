@@ -1,0 +1,38 @@
+/**
+ * Global stylesheet — TailwindCSS base/components/utilities.
+ *
+ * The `@tailwind` directives are processed by PostCSS (configured in
+ * `postcss.config.js`) which runs TailwindCSS + autoprefixer. The
+ * Tailwind config (`tailwind.config.ts`) restricts the content glob to
+ * this package's `src/**` so we don't ship the world.
+ *
+ * Custom CSS below the `@tailwind` directives is intentionally minimal:
+ * the design system lives in Tailwind utility classes (e.g.
+ * `text-neutral-900`, `bg-neutral-50`) and the small set of presentational
+ * primitives in `components/ui/`.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Minimal sane defaults: keep the page at least as tall as the viewport
+ * and use a neutral-on-neutral palette. Component-level styling stays in
+ * Tailwind utility classes.
+ */
+html,
+body,
+#root {
+  min-height: 100%;
+  background-color: theme('colors.neutral.50');
+  color: theme('colors.neutral.900');
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+}
