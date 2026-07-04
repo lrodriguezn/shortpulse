@@ -102,8 +102,10 @@ COPY --from=build /app/packages/backend/ ./packages/backend/
 # drizzle-kit, eslint, etc.). The result is a slimmed `node_modules`
 # that the runtime image copies in.
 # `CI=true` prevents pnpm from aborting on non-TTY prompts.
+# `--ignore-scripts` skips lifecycle scripts (husky prepare, etc.)
+# that are irrelevant in the production dependency tree.
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    CI=true pnpm install --offline --frozen-lockfile --prod
+    CI=true pnpm install --offline --frozen-lockfile --prod --ignore-scripts
 
 # =============================================================================
 # Stage 4: runtime — the final production image
