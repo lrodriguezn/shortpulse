@@ -17,11 +17,14 @@
   "dependencies": {
     "@shortpulse/shared": "workspace:*",
     "drizzle-orm": "^0.36.4",
-    "postgres": "^3.4.5"
+    "maxmind": "^5.0.6",
+    "postgres": "^3.4.5",
+    "ua-parser-js": "^2.0.10"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^10.13.2",
     "@types/pg": "^8.11.10",
+    "@types/ua-parser-js": "^0.7.39",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.28.1",
     "testcontainers": "^10.13.2"
