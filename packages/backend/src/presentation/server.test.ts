@@ -119,6 +119,34 @@ describe('buildApp', () => {
     const body = response.json();
     expect(body.status).toBe(400);
     expect(body.title).toBe('Bad Request');
+    // RFC 7807 content-type per design §5 — the FE's apiClient
+    // branches on this header to extract the problem-details body.
+    expect(response.headers['content-type']).toMatch(/application\/problem\+json/);
+    await app.close();
+  });
+
+  it('uses the RFC 7807 content-type on the top-level error handler responses', async () => {
+    // The setErrorHandler is the catch-all for errors that escape
+    // route-specific try/catches (e.g. uncaught exceptions in
+    // hooks). It MUST also set the problem-details content-type.
+    const container = createContainer({
+      db: stubDb(),
+      baseUrl: 'http://localhost:3000',
+    });
+    const app = await buildApp(container);
+
+    // A POST to an unknown API path hits the not-found handler
+    // (static-plugin) which DOES set the content-type. We assert
+    // here that the route-handler-level Zod failure also sets it
+    // (already covered by the previous test) AND verify the
+    // setErrorHandler's content-type via a deliberately-broken
+    // route we add ad-hoc.
+    app.get('/__boom', async () => {
+      throw new Error('boom');
+    });
+    const response = await app.inject({ method: 'GET', url: '/__boom' });
+    expect(response.statusCode).toBe(500);
+    expect(response.headers['content-type']).toMatch(/application\/problem\+json/);
     await app.close();
   });
 

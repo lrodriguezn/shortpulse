@@ -79,9 +79,18 @@ export async function buildApp(
   // route-specific try/catches (e.g. uncaught exceptions in hooks).
   // Domain errors are mapped via the error-mapper; non-domain
   // errors bucket to 500.
+  //
+  // The response uses the RFC 7807 content-type
+  // `application/problem+json` (design §5). Fastify's `reply.send`
+  // would default to `application/json` for the problem-details
+  // body; we override the content-type so RFC 7807 clients can
+  // detect the response shape via the standard content negotiation.
   app.setErrorHandler((error, _request, reply) => {
     const mapped = mapDomainError(error);
-    return reply.code(mapped.statusCode).send(mapped.problem);
+    return reply
+      .code(mapped.statusCode)
+      .header('Content-Type', 'application/problem+json')
+      .send(mapped.problem);
   });
 
   // Wire the DB probe for /health: `SELECT 1` via Drizzle. The

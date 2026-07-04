@@ -120,7 +120,10 @@ export const redirectRoute: FastifyPluginAsync<RedirectRouteOptions> = async (
         return reply.code(302).header('Location', originalUrl).send();
       } catch (error) {
         const mapped = mapDomainError(error);
-        return reply.code(mapped.statusCode).send(mapped.problem);
+        return reply
+          .code(mapped.statusCode)
+          .header('Content-Type', 'application/problem+json')
+          .send(mapped.problem);
       }
     },
   );

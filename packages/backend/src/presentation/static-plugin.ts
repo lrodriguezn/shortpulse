@@ -142,22 +142,28 @@ export async function registerStaticPlugin(
     const method = request.method;
     const isRead = method === 'GET' || method === 'HEAD';
     if (!isRead) {
-      return reply.code(404).send({
-        type: 'about:blank',
-        title: 'Not Found',
-        status: 404,
-        detail: `Route ${method} ${request.url} does not exist`,
-      });
+      return reply
+        .code(404)
+        .header('Content-Type', 'application/problem+json')
+        .send({
+          type: 'about:blank',
+          title: 'Not Found',
+          status: 404,
+          detail: `Route ${method} ${request.url} does not exist`,
+        });
     }
 
     const kind = classifyNotFound(request.url);
     if (kind === 'api' || kind === 'asset') {
-      return reply.code(404).send({
-        type: 'about:blank',
-        title: 'Not Found',
-        status: 404,
-        detail: `Route ${method} ${request.url} does not exist`,
-      });
+      return reply
+        .code(404)
+        .header('Content-Type', 'application/problem+json')
+        .send({
+          type: 'about:blank',
+          title: 'Not Found',
+          status: 404,
+          detail: `Route ${method} ${request.url} does not exist`,
+        });
     }
 
     // SPA fallback: serve the built `index.html`. The FE's

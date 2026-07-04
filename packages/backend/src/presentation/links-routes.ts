@@ -83,12 +83,17 @@ export const linksRoutes: FastifyPluginAsync<LinksRoutesOptions> = async (
   app.post('/api/links', async (request, reply) => {
     const parsed = createLinkSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.code(400).send({
-        type: 'about:blank',
-        title: 'Bad Request',
-        status: 400,
-        detail: parsed.error.issues[0]?.message ?? 'Invalid request body',
-      });
+      // Zod validation failures also use the problem-details shape
+      // (and content-type) so clients have ONE error contract.
+      return reply
+        .code(400)
+        .header('Content-Type', 'application/problem+json')
+        .send({
+          type: 'about:blank',
+          title: 'Bad Request',
+          status: 400,
+          detail: parsed.error.issues[0]?.message ?? 'Invalid request body',
+        });
     }
     try {
       const result = await useCases.createLink.execute({
@@ -99,7 +104,10 @@ export const linksRoutes: FastifyPluginAsync<LinksRoutesOptions> = async (
       return reply.code(201).send(toCreateResponse(result));
     } catch (error) {
       const mapped = mapDomainError(error);
-      return reply.code(mapped.statusCode).send(mapped.problem);
+      return reply
+        .code(mapped.statusCode)
+        .header('Content-Type', 'application/problem+json')
+        .send(mapped.problem);
     }
   });
 
@@ -107,12 +115,15 @@ export const linksRoutes: FastifyPluginAsync<LinksRoutesOptions> = async (
   app.get('/api/links', async (request, reply) => {
     const parsed = listLinksQuerySchema.safeParse(request.query);
     if (!parsed.success) {
-      return reply.code(400).send({
-        type: 'about:blank',
-        title: 'Bad Request',
-        status: 400,
-        detail: parsed.error.issues[0]?.message ?? 'Invalid querystring',
-      });
+      return reply
+        .code(400)
+        .header('Content-Type', 'application/problem+json')
+        .send({
+          type: 'about:blank',
+          title: 'Bad Request',
+          status: 400,
+          detail: parsed.error.issues[0]?.message ?? 'Invalid querystring',
+        });
     }
     try {
       const query = parsed.data;
@@ -139,7 +150,10 @@ export const linksRoutes: FastifyPluginAsync<LinksRoutesOptions> = async (
       });
     } catch (error) {
       const mapped = mapDomainError(error);
-      return reply.code(mapped.statusCode).send(mapped.problem);
+      return reply
+        .code(mapped.statusCode)
+        .header('Content-Type', 'application/problem+json')
+        .send(mapped.problem);
     }
   });
 
@@ -151,7 +165,10 @@ export const linksRoutes: FastifyPluginAsync<LinksRoutesOptions> = async (
       return reply.code(204).send();
     } catch (error) {
       const mapped = mapDomainError(error);
-      return reply.code(mapped.statusCode).send(mapped.problem);
+      return reply
+        .code(mapped.statusCode)
+        .header('Content-Type', 'application/problem+json')
+        .send(mapped.problem);
     }
   });
 };

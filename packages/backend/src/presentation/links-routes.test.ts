@@ -371,4 +371,50 @@ describe('links-routes', () => {
       await testApp.close();
     });
   });
+
+  describe('content-type (RFC 7807)', () => {
+    // All problem-details responses MUST use the spec-locked
+    // content-type so RFC 7807 clients (and the FE's `apiClient`)
+    // can detect the response shape via standard content negotiation.
+    it('POST validation failure uses application/problem+json', async () => {
+      const { stubs } = buildStubs();
+      const localApp = await buildApp(stubs);
+      const response = await localApp.inject({
+        method: 'POST',
+        url: '/api/links',
+        payload: { original_url: 'not-a-url' },
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.headers['content-type']).toMatch(/application\/problem\+json/);
+      await localApp.close();
+    });
+
+    it('GET validation failure uses application/problem+json', async () => {
+      const { stubs } = buildStubs();
+      const localApp = await buildApp(stubs);
+      const response = await localApp.inject({
+        method: 'GET',
+        url: '/api/links?page_size=999',
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.headers['content-type']).toMatch(/application\/problem\+json/);
+      await localApp.close();
+    });
+
+    it('domain error responses use application/problem+json', async () => {
+      // The use-case throws a 404 — the route catches it via the
+      // error-mapper and replies with the problem-details body +
+      // content-type.
+      const { stubs, deleteLink } = buildStubs();
+      const localApp = await buildApp(stubs);
+      deleteLink.mockRejectedValueOnce(new LinkNotFoundError('abc'));
+      const response = await localApp.inject({
+        method: 'DELETE',
+        url: '/api/links/00000000-0000-0000-0000-000000000099',
+      });
+      expect(response.statusCode).toBe(404);
+      expect(response.headers['content-type']).toMatch(/application\/problem\+json/);
+      await localApp.close();
+    });
+  });
 });

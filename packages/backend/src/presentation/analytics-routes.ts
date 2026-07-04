@@ -53,7 +53,10 @@ export const analyticsRoutes: FastifyPluginAsync<AnalyticsRoutesOptions> = async
       });
     } catch (error) {
       const mapped = mapDomainError(error);
-      return reply.code(mapped.statusCode).send(mapped.problem);
+      return reply
+        .code(mapped.statusCode)
+        .header('Content-Type', 'application/problem+json')
+        .send(mapped.problem);
     }
   });
 
@@ -61,12 +64,15 @@ export const analyticsRoutes: FastifyPluginAsync<AnalyticsRoutesOptions> = async
   app.get('/api/analytics', async (request, reply) => {
     const parsed = listAnalyticsQuerySchema.safeParse(request.query);
     if (!parsed.success) {
-      return reply.code(400).send({
-        type: 'about:blank',
-        title: 'Bad Request',
-        status: 400,
-        detail: parsed.error.issues[0]?.message ?? 'Invalid querystring',
-      });
+      return reply
+        .code(400)
+        .header('Content-Type', 'application/problem+json')
+        .send({
+          type: 'about:blank',
+          title: 'Bad Request',
+          status: 400,
+          detail: parsed.error.issues[0]?.message ?? 'Invalid querystring',
+        });
     }
     try {
       const q = parsed.data;
@@ -97,7 +103,10 @@ export const analyticsRoutes: FastifyPluginAsync<AnalyticsRoutesOptions> = async
       });
     } catch (error) {
       const mapped = mapDomainError(error);
-      return reply.code(mapped.statusCode).send(mapped.problem);
+      return reply
+        .code(mapped.statusCode)
+        .header('Content-Type', 'application/problem+json')
+        .send(mapped.problem);
     }
   });
 
@@ -105,12 +114,15 @@ export const analyticsRoutes: FastifyPluginAsync<AnalyticsRoutesOptions> = async
   app.get('/api/analytics/timeseries', async (request, reply) => {
     const parsed = timeseriesQuerySchema.safeParse(request.query);
     if (!parsed.success) {
-      return reply.code(400).send({
-        type: 'about:blank',
-        title: 'Bad Request',
-        status: 400,
-        detail: parsed.error.issues[0]?.message ?? 'Invalid querystring',
-      });
+      return reply
+        .code(400)
+        .header('Content-Type', 'application/problem+json')
+        .send({
+          type: 'about:blank',
+          title: 'Bad Request',
+          status: 400,
+          detail: parsed.error.issues[0]?.message ?? 'Invalid querystring',
+        });
     }
     try {
       const q = parsed.data;
@@ -127,7 +139,10 @@ export const analyticsRoutes: FastifyPluginAsync<AnalyticsRoutesOptions> = async
       });
     } catch (error) {
       const mapped = mapDomainError(error);
-      return reply.code(mapped.statusCode).send(mapped.problem);
+      return reply
+        .code(mapped.statusCode)
+        .header('Content-Type', 'application/problem+json')
+        .send(mapped.problem);
     }
   });
 };
