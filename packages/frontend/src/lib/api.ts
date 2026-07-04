@@ -17,6 +17,7 @@
  * (see `useLinks`, `useCreateLink`, etc.).
  */
 import type {
+  AnalyticsEvent,
   AnalyticsSummary,
   CreateLinkInput,
   HealthResponse,
@@ -172,8 +173,8 @@ export function getAnalyticsSummary(signal?: AbortSignal): Promise<AnalyticsSumm
 export function listAnalytics(
   query: Partial<ListAnalyticsQuery> = {},
   signal?: AbortSignal,
-): Promise<PagedResponse<unknown>> {
-  return request<PagedResponse<unknown>>('/api/analytics', {
+): Promise<PagedResponse<AnalyticsEvent>> {
+  return request<PagedResponse<AnalyticsEvent>>('/api/analytics', {
     query: query as Record<string, JsonValue>,
     ...(signal ? { signal } : {}),
   });

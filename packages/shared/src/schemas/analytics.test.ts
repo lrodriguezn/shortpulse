@@ -12,6 +12,7 @@ const UUID = '11111111-2222-4333-8444-555555555555';
 describe('analyticsEventSchema', () => {
   it('parses a fully-populated event', () => {
     const result = analyticsEventSchema.safeParse({
+      id: UUID,
       link_id: UUID,
       timestamp: '2026-07-04T12:00:00.000Z',
       ip: '1.2.3.4',
@@ -20,12 +21,14 @@ describe('analyticsEventSchema', () => {
       country: 'US',
       city: 'Mountain View',
       browser: 'Chrome',
+      link_label: 'my-link',
     });
     expect(result.success).toBe(true);
   });
 
-  it('accepts null for the nullable geo/browser fields', () => {
+  it('accepts the spec-locked "(deleted link)" link_label for soft-deleted links', () => {
     const result = analyticsEventSchema.safeParse({
+      id: UUID,
       link_id: UUID,
       timestamp: '2026-07-04T12:00:00.000Z',
       ip: '1.2.3.4',
@@ -34,13 +37,47 @@ describe('analyticsEventSchema', () => {
       country: null,
       city: null,
       browser: null,
+      link_label: '(deleted link)',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts null for the nullable geo/browser fields', () => {
+    const result = analyticsEventSchema.safeParse({
+      id: UUID,
+      link_id: UUID,
+      timestamp: '2026-07-04T12:00:00.000Z',
+      ip: '1.2.3.4',
+      user_agent: 'Mozilla/5.0',
+      referer: '',
+      country: null,
+      city: null,
+      browser: null,
+      link_label: 'my-link',
     });
     expect(result.success).toBe(true);
   });
 
   it('rejects a non-UUID link_id', () => {
     const result = analyticsEventSchema.safeParse({
+      id: UUID,
       link_id: 'not-a-uuid',
+      timestamp: '2026-07-04T12:00:00.000Z',
+      ip: '1.2.3.4',
+      user_agent: 'Mozilla/5.0',
+      referer: '',
+      country: null,
+      city: null,
+      browser: null,
+      link_label: 'my-link',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a missing link_label (always present per spec analytics #5)', () => {
+    const result = analyticsEventSchema.safeParse({
+      id: UUID,
+      link_id: UUID,
       timestamp: '2026-07-04T12:00:00.000Z',
       ip: '1.2.3.4',
       user_agent: 'Mozilla/5.0',

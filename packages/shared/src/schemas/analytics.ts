@@ -8,8 +8,18 @@
 import { z } from 'zod';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, TIMESERIES_GRANULARITIES } from '../constants.js';
 
-/** A single analytics event. Returned by `GET /api/analytics`. */
+/**
+ * A single analytics event. Returned by `GET /api/analytics`.
+ *
+ * The `link_label` field is the spec-locked presentation token:
+ * the live slug when the link is active, or `"(deleted link)"` when
+ * the link is soft-deleted (per spec analytics #5 + design §5).
+ * The field is always present in the API response because the BE
+ * LEFT-JOINs the links table and COALESCEs a NULL slug to the
+ * spec-locked literal at the application layer.
+ */
 export const analyticsEventSchema = z.object({
+  id: z.string().uuid(),
   link_id: z.string().uuid(),
   timestamp: z.string().datetime(),
   ip: z.string(),
@@ -18,8 +28,12 @@ export const analyticsEventSchema = z.object({
   country: z.string().nullable(),
   city: z.string().nullable(),
   browser: z.string().nullable(),
+  link_label: z.string(),
 });
 export type AnalyticsEvent = z.infer<typeof analyticsEventSchema>;
+
+/** Spec-locked literal the BE uses for soft-deleted link events. */
+export const DELETED_LINK_LABEL = '(deleted link)';
 
 /** Summary KPIs returned by `GET /api/analytics/summary`. */
 export const analyticsSummarySchema = z.object({
