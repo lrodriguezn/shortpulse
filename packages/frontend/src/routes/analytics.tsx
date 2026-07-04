@@ -1,21 +1,13 @@
 /**
- * Analytics page \u2014 `routes/analytics.tsx`.
+ * Analytics page — `routes/analytics.tsx`.
  *
- * Phase 7 placeholder: a heading that confirms the route resolved.
- * The full Analytics feature (KPI cards, events table, Recharts
- * timeseries with granularity switcher) lands in Phase 9.
- * The route MUST exist now so the nav link resolves.
+ * Phase 7 shipped a placeholder so the route resolved from
+ * day one. Phase 9 lands the real implementation: a re-export
+ * of `AnalyticsPage` from the Analytics feature folder. The
+ * router (`router.ts`) imports `AnalyticsPage` from this
+ * file; re-exporting keeps the import path stable while
+ * moving the actual code to `features/analytics/analytics-page.tsx`
+ * where the rest of the Analytics feature (KPI cards, events
+ * table, timeseries chart) lives.
  */
-export function AnalyticsPage(): React.JSX.Element {
-  return (
-    <section aria-labelledby="analytics-title">
-      <h1 id="analytics-title" className="text-2xl font-semibold text-neutral-900">
-        Analytics
-      </h1>
-      <p className="mt-2 text-neutral-600">
-        Métricas agregadas, eventos y serie temporal. Las tarjetas, la tabla y la gráfica llegan en
-        la siguiente fase.
-      </p>
-    </section>
-  );
-}
+export { AnalyticsPage } from '../features/analytics/analytics-page.js';
