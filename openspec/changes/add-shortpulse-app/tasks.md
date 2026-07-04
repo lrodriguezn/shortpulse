@@ -19,12 +19,12 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 0: Monorepo scaffold
 
-- [ ] 0.1 Init: `pnpm-workspace.yaml`, root `package.json`, `.gitignore`, `.editorconfig`, `.npmrc` (auto-install-peers). [S]
-- [ ] 0.2 `tsconfig.base.json` strict; per-package `tsconfig.json`. [S]
-- [ ] 0.3 `.eslintrc.cjs`, `.prettierrc`, `.prettierignore`; root `lint`/`format`. [S]
-- [ ] 0.4 Husky + lint-staged + commitlint. [S]
-- [ ] 0.5 CI `.github/workflows/ci.yml` runs install/lint/typecheck/test/build. [M]
-- [ ] 0.6 Empty `packages/{shared,backend,frontend}/package.json` + `vitest.config.ts` (90% threshold). [S]
+- [x] 0.1 Init: `pnpm-workspace.yaml`, root `package.json`, `.gitignore`, `.editorconfig`, `.npmrc` (auto-install-peers). [S]
+- [x] 0.2 `tsconfig.base.json` strict; per-package `tsconfig.json`. [S]
+- [x] 0.3 `.eslintrc.cjs`, `.prettierrc`, `.prettierignore`; root `lint`/`format`. [S]
+- [x] 0.4 Husky + lint-staged + commitlint. [S]
+- [x] 0.5 CI `.github/workflows/ci.yml` runs install/lint/typecheck/test/build. [M]
+- [x] 0.6 Empty `packages/{shared,backend,frontend}/package.json` + `vitest.config.ts` (90% threshold). [S]
 
 ## Phase 1: packages/shared
 
