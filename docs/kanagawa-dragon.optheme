@@ -1,0 +1,67 @@
+{
+  "name": "Kanagawa Dragon - ShortPulse",
+  "version": "1.0.0",
+  "description": "Kanagawa Dragon (dark) + Kanagawa Lotus (light) theme for ShortPulse",
+  "source": "https://github.com/rebelot/kanagawa.nvim",
+  "variables": {
+    "bg": { "type": "color", "value": "#181616" },
+    "bg-dim": { "type": "color", "value": "#12120f" },
+    "bg-m1": { "type": "color", "value": "#1D1C19" },
+    "bg-surface": { "type": "color", "value": "#282727" },
+    "bg-surface-hover": { "type": "color", "value": "#393836" },
+    "border": { "type": "color", "value": "#393836" },
+    "border-subtle": { "type": "color", "value": "#282727" },
+    "fg": { "type": "color", "value": "#c5c9c5" },
+    "fg-dim": { "type": "color", "value": "#a6a69c" },
+    "fg-muted": { "type": "color", "value": "#737c73" },
+    "accent": { "type": "color", "value": "#658594" },
+    "accent-hover": { "type": "color", "value": "#8BA4B0" },
+    "accent-subtle": { "type": "color", "value": "#223249" },
+    "success": { "type": "color", "value": "#87a987" },
+    "warning": { "type": "color", "value": "#c4b28a" },
+    "error": { "type": "color", "value": "#c4746e" },
+    "error-subtle": { "type": "color", "value": "#43242B" }
+  },
+  "themes": {
+    "Color Scheme": {
+      "Dark (Dragon)": {
+        "bg": "#181616",
+        "bg-dim": "#12120f",
+        "bg-m1": "#1D1C19",
+        "bg-surface": "#282727",
+        "bg-surface-hover": "#393836",
+        "border": "#393836",
+        "border-subtle": "#282727",
+        "fg": "#c5c9c5",
+        "fg-dim": "#a6a69c",
+        "fg-muted": "#737c73",
+        "accent": "#658594",
+        "accent-hover": "#8BA4B0",
+        "accent-subtle": "#223249",
+        "success": "#87a987",
+        "warning": "#c4b28a",
+        "error": "#c4746e",
+        "error-subtle": "#43242B"
+      },
+      "Light (Lotus)": {
+        "bg": "#e7dba0",
+        "bg-dim": "#dcd5ac",
+        "bg-m1": "#e5ddb0",
+        "bg-surface": "#dcd5ac",
+        "bg-surface-hover": "#dcd7ba",
+        "border": "#dcd7ba",
+        "border-subtle": "#e5ddb0",
+        "fg": "#545464",
+        "fg-dim": "#716e61",
+        "fg-muted": "#8a8980",
+        "accent": "#4d699b",
+        "accent-hover": "#5d57a3",
+        "accent-subtle": "#c7d7e0",
+        "success": "#6f894e",
+        "warning": "#cc6d00",
+        "error": "#c84053",
+        "error-subtle": "#d9a594"
+      }
+    }
+  }
+}

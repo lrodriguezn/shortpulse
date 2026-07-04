@@ -237,6 +237,50 @@ Estas fueron planteadas en la propuesta y resueltas en las especificaciones de c
 
 ---
 
+## 14. Sistema de Diseño — Kanagawa Dragon
+
+> Paleta de colores basada en [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim). Soporta dark mode (Dragon) y light mode (Lotus).
+
+### Paleta Principal (Dark Mode — Dragon)
+
+| Token | Hex | Uso |
+|-------|-----|-----|
+| `--sp-bg` | `#181616` | Background principal |
+| `--sp-bg-surface` | `#282727` | Cards, inputs, navbar |
+| `--sp-bg-m1` | `#1D1C19` | Headers de tabla, pagination |
+| `--sp-border` | `#393836` | Borradores de cards, inputs |
+| `--sp-fg` | `#c5c9c5` | Texto principal |
+| `--sp-fg-dim` | `#a6a69c` | Texto secundario |
+| `--sp-fg-muted` | `#737c73` | Placeholders, timestamps |
+| `--sp-accent` | `#658594` | Botones, links, chips slug |
+| `--sp-accent-subtle` | `#223249` | Chip slug bg, KPI icon bg |
+| `--sp-success` | `#87a987` | Estado activo, trends |
+| `--sp-warning` | `#c4b28a` | Warning states |
+| `--sp-error` | `#c4746e` | Eliminar, enlace inactivo |
+
+### Paleta Light Mode (Lotus)
+
+| Token | Hex | Uso |
+|-------|-----|-----|
+| `--sp-bg` | `#e7dba0` | Background principal |
+| `--sp-bg-surface` | `#dcd5ac` | Cards, surfaces |
+| `--sp-fg` | `#545464` | Texto principal |
+| `--sp-accent` | `#4d699b` | Links, botones |
+| `--sp-success` | `#6f894e` | Estado activo |
+| `--sp-error` | `#c84053` | Error states |
+
+### Toggle de Tema
+
+El navbar incluye un botón de toggle (sol/luna) que cambia `data-theme` entre `"dark"` y `"light"` en el elemento `<html>`. Los CSS custom properties se actualizan automáticamente.
+
+### Archivos del Sistema de Diseño
+
+- `docs/kanagawa-dragon.optheme` — Theme preset para OpenPencil
+- `docs/kanagawa-dragon.css` — CSS custom properties (importable)
+- `docs/kanagawa-design-system.md` — Documentación completa del sistema
+
+---
+
 ## Referencias
 
 - `openspec/changes/add-shortpulse-app/proposal.md` — propuesta de cambio (intent, alcance, riesgos)
@@ -244,3 +288,4 @@ Estas fueron planteadas en la propuesta y resueltas en las especificaciones de c
 - `openspec/specs/links/spec.md` — especificación de capacidad de enlaces
 - `openspec/specs/analytics/spec.md` — especificación de capacidad de analíticas
 - `openspec/specs/health/spec.md` — especificación de capacidad de salud
+- `docs/kanagawa-design-system.md` — sistema de diseño Kanagawa Dragon

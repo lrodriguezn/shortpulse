@@ -1,0 +1,101 @@
+/**
+ * ShortPulse — Kanagawa Dragon Theme
+ * 
+ * Based on kanagawa.nvim palette:
+ * - Dark: Kanagawa Dragon (default)
+ * - Light: Kanagawa Lotus
+ * 
+ * Source: https://github.com/rebelot/kanagawa.nvim
+ */
+
+:root,
+:root[data-theme="dark"] {
+  /* Backgrounds */
+  --sp-bg: #181616;
+  --sp-bg-dim: #12120f;
+  --sp-bg-m1: #1D1C19;
+  --sp-bg-surface: #282727;
+  --sp-bg-surface-hover: #393836;
+
+  /* Borders */
+  --sp-border: #393836;
+  --sp-border-subtle: #282727;
+
+  /* Foreground / Text */
+  --sp-fg: #c5c9c5;
+  --sp-fg-dim: #a6a69c;
+  --sp-fg-muted: #737c73;
+
+  /* Accent */
+  --sp-accent: #658594;
+  --sp-accent-hover: #8BA4B0;
+  --sp-accent-subtle: #223249;
+
+  /* Semantic */
+  --sp-success: #87a987;
+  --sp-warning: #c4b28a;
+  --sp-error: #c4746e;
+  --sp-error-subtle: #43242B;
+
+  /* Shadows */
+  --sp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --sp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:root[data-theme="light"] {
+  /* Backgrounds */
+  --sp-bg: #e7dba0;
+  --sp-bg-dim: #dcd5ac;
+  --sp-bg-m1: #e5ddb0;
+  --sp-bg-surface: #dcd5ac;
+  --sp-bg-surface-hover: #dcd7ba;
+
+  /* Borders */
+  --sp-border: #dcd7ba;
+  --sp-border-subtle: #e5ddb0;
+
+  /* Foreground / Text */
+  --sp-fg: #545464;
+  --sp-fg-dim: #716e61;
+  --sp-fg-muted: #8a8980;
+
+  /* Accent */
+  --sp-accent: #4d699b;
+  --sp-accent-hover: #5d57a3;
+  --sp-accent-subtle: #c7d7e0;
+
+  /* Semantic */
+  --sp-success: #6f894e;
+  --sp-warning: #cc6d00;
+  --sp-error: #c84053;
+  --sp-error-subtle: #d9a594;
+
+  /* Shadows */
+  --sp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --sp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Typography */
+:root {
+  --sp-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --sp-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Border Radius */
+:root {
+  --sp-radius-sm: 6px;
+  --sp-radius-md: 8px;
+  --sp-radius-lg: 12px;
+  --sp-radius-full: 999px;
+}
+
+/* Spacing */
+:root {
+  --sp-space-xs: 4px;
+  --sp-space-sm: 8px;
+  --sp-space-md: 12px;
+  --sp-space-lg: 16px;
+  --sp-space-xl: 20px;
+  --sp-space-2xl: 24px;
+  --sp-space-3xl: 32px;
+}
