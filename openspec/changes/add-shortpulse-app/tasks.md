@@ -89,9 +89,9 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 11: E2E (Playwright)
 
-- [ ] 11.1 `e2e/create-link.e2e.spec.ts` — form submit → row in table. [M]
-- [ ] 11.2 `e2e/redirect-and-analytics.e2e.spec.ts` — visit `/{slug}` → 302 → event in analytics. [M]
-- [ ] 11.3 `e2e/delete-link.e2e.spec.ts` — delete → `/{slug}` 404; analytics retains. [M]
+- [x] 11.1 `e2e/create-link.e2e.spec.ts` — form submit → row in table. [M] *(slice 12 WU1 — 5 tests: auto-gen slug, custom slug + short_url, 409 collision toast 'Ese slug ya existe, prueba otro', invalid URL validation, empty-slug auto-gen)*
+- [x] 11.2 `e2e/redirect-and-analytics.e2e.spec.ts` — visit `/{slug}` → 302 → event in analytics. [M] *(slice 12 WU2 — 4 tests: 302 + Location header, total_clicks delta + KPI display, 404 SPA page for non-existent, 404 + retention for deleted slug)*
+- [x] 11.3 `e2e/delete-link.e2e.spec.ts` — delete → `/{slug}` 404; analytics retains. [M] *(slice 12 WU3 — 3 tests: delete via table (with window.confirm handler), 404 on redirect, analytics retention with '(deleted link)' label)*
 
 ## Phase 12: Docs + design cleanup
 
