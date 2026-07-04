@@ -66,15 +66,15 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 7: Frontend scaffold
 
-- [ ] 7.1 Vite + React + TS + TailwindCSS; `main.tsx`; `pnpm dev` boots. [M]
-- [ ] 7.2 TanStack Router file-based; `__root.tsx` (ErrorBoundary, nav); routes `/` `/analytics` `*`; QueryClient + sonner. [M]
-- [ ] 7.3 `lib/{api-client,query-keys}.ts`; `components/ui/{button,input,table,spinner,toast,error-boundary}.tsx`; `routes/not-found.tsx`. [M]
+- [x] 7.1 Vite + React + TS + TailwindCSS; `main.tsx`; `pnpm dev` boots. [M]
+- [x] 7.2 TanStack Router file-based; `__root.tsx` (ErrorBoundary, nav); routes `/` `/analytics` `*`; QueryClient + sonner. [M]
+- [x] 7.3 `lib/{api-client,query-keys}.ts`; `components/ui/{button,input,table,spinner,toast,error-boundary}.tsx`; `routes/not-found.tsx`. [M]
 
 ## Phase 8: Frontend Links feature
 
-- [ ] 8.1 `features/links/api/link-api.ts` + `hooks/{use-links,use-create-link,use-delete-link}.ts`. [M]
-- [ ] 8.2 `components/create-link-form.tsx` — RHF + zodResolver; on 409 `sonner.error("Ese slug ya existe, prueba otro")`. [M]
-- [ ] 8.3 `components/{links-table,links-row,empty-state}.tsx` (TanStack Table w/ search/sort/pagination, copy/open/delete) + `routes/links.tsx`. [M]
+- [x] 8.1 `features/links/api/link-api.ts` + `hooks/{use-links,use-create-link,use-delete-link}.ts`. [M] *(slice 8 WU4 — the hooks landed in `packages/frontend/src/hooks/use-links.ts` + the api-client in `packages/frontend/src/lib/api.ts` per the slice 8 design decision: the FE keeps one `lib/api.ts` for all endpoints rather than per-feature `api/` sub-folders, so the link CRUD functions live there alongside analytics. The query keys / mutation hooks are co-located in `use-links.ts` per the slice 8 file plan.)*
+- [x] 8.2 `components/create-link-form.tsx` — RHF + zodResolver; on 409 `sonner.error("Ese slug ya existe, prueba otro")`. [M] *(slice 9 WU2 — `features/links/create-link-form.tsx` with full TDD coverage: RHF + zodResolver, 409 detail toast, success toast + auto-copy + reset, loading state, client-side + server-side validation handling.)*
+- [x] 8.3 `components/{links-table,links-row,empty-state}.tsx` (TanStack Table w/ search/sort/pagination, copy/open/delete) + `routes/links.tsx`. [M] *(slice 9 WU3 + WU4 — `features/links/links-table.tsx` (TanStack Table with all six spec-locked columns, debounced server-side search, client-side sort, server-side pagination, copy/open/delete row actions, loading/empty/error states) and `features/links/links-page.tsx` composing form + table; `routes/index.tsx` re-exports the page. `EmptyState` is the spec-locked `components/ui/empty-state.tsx` primitive from slice 8 WU3. `links-row.tsx` was inlined into the table per the slice 9 orchestrator's "optional extracted row component, or inline in table" guidance — no separate row file needed.)*
 
 ## Phase 9: Frontend Analytics feature
 
