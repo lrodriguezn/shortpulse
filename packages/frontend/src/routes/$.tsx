@@ -28,7 +28,7 @@ export function NotFoundPage(): React.JSX.Element {
         404
       </p>
       <h1 id="not-found-title" className="sr-only">
-        P\u00e1gina no encontrada
+        Página no encontrada
       </h1>
       <p className="text-lg text-neutral-700">El enlace solicitado no existe.</p>
       <Link

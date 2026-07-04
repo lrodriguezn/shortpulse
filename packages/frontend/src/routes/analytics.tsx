@@ -13,8 +13,8 @@ export function AnalyticsPage(): React.JSX.Element {
         Analytics
       </h1>
       <p className="mt-2 text-neutral-600">
-        M\u00e9tricas agregadas, eventos y serie temporal. Las tarjetas, la tabla y la gr\u00e1fica
-        llegan en la siguiente fase.
+        Métricas agregadas, eventos y serie temporal. Las tarjetas, la tabla y la gráfica llegan en
+        la siguiente fase.
       </p>
     </section>
   );

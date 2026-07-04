@@ -13,9 +13,22 @@
  * matchers are no-ops under non-jsdom environments; the
  * `environmentMatchGlobs` in the root vitest config ensures they're
  * only invoked where a DOM exists.
+ *
+ * Finally, registers `afterEach(cleanup)` so every test that uses
+ * `@testing-library/react`'s `render()` gets a fresh DOM. The auto-
+ * cleanup is gated on the `globals: false` setting in the root
+ * vitest config — without this explicit hook, React 18 + the
+ * transition commit phase would leave stale DOM between tests and
+ * `getByText` / `getByRole` would see duplicate content.
  */
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
 process.env['DATABASE_URL'] ??= 'postgres://test:test@localhost:5432/shortpulse_test';
 process.env['PORT'] ??= '3000';
 process.env['BASE_URL'] ??= 'http://localhost:3000';
+
+afterEach(() => {
+  cleanup();
+});

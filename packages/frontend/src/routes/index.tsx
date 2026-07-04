@@ -15,8 +15,8 @@ export function LinksPage(): React.JSX.Element {
         Links
       </h1>
       <p className="mt-2 text-neutral-600">
-        Acort\u00e1 tus enlaces y consulta el historial. La tabla y el formulario llegan en la
-        pr\u00f3xima fase.
+        Acorta tus enlaces y consulta el historial. La tabla y el formulario llegan en la próxima
+        fase.
       </p>
     </section>
   );
