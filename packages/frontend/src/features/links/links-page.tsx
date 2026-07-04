@@ -20,7 +20,7 @@ import { LinksTable } from './links-table.js';
 export function LinksPage(): React.JSX.Element {
   return (
     <section aria-labelledby="links-title" className="flex flex-col gap-6">
-      <h1 id="links-title" className="text-2xl font-semibold text-neutral-900">
+      <h1 id="links-title" className="text-2xl font-semibold text-sp-fg">
         Links
       </h1>
       <CreateLinkForm />

@@ -31,7 +31,7 @@ import { TimeseriesChart } from './timeseries-chart.js';
 export function AnalyticsPage(): React.JSX.Element {
   return (
     <section aria-labelledby="analytics-title" className="flex flex-col gap-6">
-      <h1 id="analytics-title" className="text-2xl font-semibold text-neutral-900">
+      <h1 id="analytics-title" className="text-2xl font-semibold text-sp-fg">
         Analytics
       </h1>
       <KpiCards />

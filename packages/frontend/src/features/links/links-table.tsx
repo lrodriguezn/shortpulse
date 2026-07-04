@@ -1,39 +1,3 @@
-/**
- * `LinksTable` \u2014 the dashboard of the Links feature.
- *
- * Spec contract (see `openspec/specs/links/spec.md` requirement #2
- * and design \u00a77):
- *  - Renders the paginated list (`useLinks`) with the spec-locked
- *    columns: `original_url`, `short_url`, `slug`, `created_at`,
- *    `click_count`, and an actions cell with copy / open / delete.
- *  - Search box: substring match on `original_url` or `slug`.
- *    Implemented SERVER-SIDE via the `useLinks` query
- *    (`search` param passed to the BE) with a 300ms debounce so
- *    we don't spam the API while the user is typing.
- *  - Sort: client-side via TanStack Table (the loaded data is
- *    sorted in place). Instant feedback; no loading state.
- *  - Pagination: server-side. The "Previous" / "Next" buttons
- *    change the `page` state, which is passed to `useLinks`
- *    and triggers a re-query.
- *  - Copy button: copies the row's `short_url` to the clipboard
- *    and toasts "URL copiada".
- *  - Open button: a real anchor (`<a target="_blank"
- *    rel="noopener noreferrer">`) so right-click / cmd-click
- *    work and screen readers announce the destination.
- *  - Delete button: window.confirm \u2192 `useDeleteLink` \u2192 toast.
- *  - Empty state: the spec-locked `EmptyState` primitive when
- *    the data array is empty (handles the "no links yet" case
- *    and the "search returned nothing" case uniformly).
- *  - Loading: a `Spinner` while the query is pending.
- *  - Error: a recoverable error block with a "Reintentar" button
- *    that calls the query's `refetch`.
- *
- * Why server-side search but client-side sort: the BE already
- * implements substring search in SQL, so we reuse the index.
- * Sort, on the other hand, operates on the loaded page (at most
- * 20 rows by default) so client-side is instant and avoids a
- * round-trip on every header click.
- */
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import {
   createColumnHelper,
@@ -63,7 +27,7 @@ const columns = [
   columnHelper.accessor('original_url', {
     header: 'URL original',
     cell: (info) => (
-      <span className="block max-w-xs truncate" title={info.getValue()}>
+      <span className="block max-w-xs truncate text-sp-fg" title={info.getValue()}>
         {info.getValue()}
       </span>
     ),
@@ -71,43 +35,37 @@ const columns = [
   columnHelper.accessor('short_url', {
     header: 'Short URL',
     cell: (info) => (
-      <span className="font-mono text-xs text-neutral-700" title={info.getValue()}>
+      <span className="font-mono text-xs text-sp-fg-dim" title={info.getValue()}>
         {info.getValue()}
       </span>
     ),
   }),
   columnHelper.accessor('slug', {
     header: 'Slug',
-    cell: (info) => <span className="font-mono text-xs">{info.getValue()}</span>,
+    cell: (info) => (
+      <span className="inline-block rounded bg-sp-accent-subtle px-1.5 py-0.5 font-mono text-xs text-sp-accent-hover">
+        {info.getValue()}
+      </span>
+    ),
   }),
   columnHelper.accessor('created_at', {
     header: 'Creado',
     cell: (info) => {
       const raw = info.getValue();
       const date = new Date(raw);
-      // Defensive: if the BE ever ships an unparseable string we
-      // surface the raw text instead of "Invalid Date".
       const label = Number.isNaN(date.getTime())
         ? raw
         : date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
-      return <span className="text-sm text-neutral-600">{label}</span>;
+      return <span className="text-sm text-sp-fg-muted">{label}</span>;
     },
   }),
   columnHelper.accessor('click_count', {
     header: 'Clicks',
-    cell: (info) => <span className="tabular-nums">{info.getValue()}</span>,
-    // Numeric columns read best low-to-high by default; override
-    // TanStack Table's "descending first" convention.
+    cell: (info) => <span className="tabular-nums text-sp-fg">{info.getValue()}</span>,
     sortDescFirst: false,
   }),
 ];
 
-/**
- * Format a date for the `Creado` column.
- *
- * Exported only for tests; production code calls the
- * `columnHelper` cell renderer above.
- */
 export function formatCreatedAt(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
@@ -120,13 +78,9 @@ export function LinksTable(): React.JSX.Element {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  // Debounce the search input so the BE isn't spammed while the
-  // user is typing. 300ms is the sweet spot for "feels instant"
-  // + "doesn't ping on every keystroke".
   useEffect(() => {
     const handle = setTimeout(() => {
       setDebouncedSearch(searchInput.trim());
-      // A new search starts at page 1.
       setPage(1);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(handle);
@@ -141,9 +95,6 @@ export function LinksTable(): React.JSX.Element {
   const { copy } = useCopyToClipboard();
   const deleteMutation = useDeleteLink();
 
-  // Memo the rows reference so the table identity is stable
-  // across re-renders (TanStack Table doesn't require this but
-  // it keeps the deps array in the test assertions predictable).
   const rows = useMemo<LinkResponse[]>(() => query.data?.data ?? [], [query.data]);
 
   const table = useReactTable({
@@ -158,11 +109,6 @@ export function LinksTable(): React.JSX.Element {
   const totalPages = query.data
     ? Math.max(1, Math.ceil(query.data.total / query.data.page_size))
     : 1;
-  // The server is the source of truth for the currently displayed
-  // page. The local `page` state is the "intended" page; while a
-  // refetch is in flight, `data.page` is the page the user is
-  // actually looking at. The buttons enable / disable off the
-  // server-confirmed page so the UX never gets ahead of the data.
   const displayedPage = query.data?.page ?? page;
   const canPrev = displayedPage > 1;
   const canNext = query.data ? displayedPage < totalPages : false;
@@ -192,7 +138,6 @@ export function LinksTable(): React.JSX.Element {
     }
   };
 
-  // --- Render: loading -------------------------------------------------------
   if (query.isPending) {
     return (
       <div aria-label="Cargando enlaces" className="flex items-center justify-center py-12">
@@ -201,18 +146,17 @@ export function LinksTable(): React.JSX.Element {
     );
   }
 
-  // --- Render: error ---------------------------------------------------------
   if (query.isError) {
     return (
       <section
         role="alert"
         aria-labelledby="links-error-title"
-        className="rounded-lg border border-red-200 bg-red-50 p-4"
+        className="rounded-lg border border-sp-error bg-sp-error-subtle p-4"
       >
-        <h3 id="links-error-title" className="text-sm font-semibold text-red-800">
+        <h3 id="links-error-title" className="text-sm font-semibold text-sp-error">
           No se pudieron cargar los enlaces
         </h3>
-        <p className="mt-1 text-sm text-red-700">{query.error?.message ?? 'Error desconocido'}</p>
+        <p className="mt-1 text-sm text-sp-error">{query.error?.message ?? 'Error desconocido'}</p>
         <Button
           variant="secondary"
           size="sm"
@@ -227,7 +171,6 @@ export function LinksTable(): React.JSX.Element {
     );
   }
 
-  // --- Render: empty ---------------------------------------------------------
   if (rows.length === 0) {
     return (
       <div className="flex flex-col gap-4">
@@ -244,13 +187,12 @@ export function LinksTable(): React.JSX.Element {
     );
   }
 
-  // --- Render: populated table ---------------------------------------------
   return (
     <div className="flex flex-col gap-4">
       <SearchBox value={searchInput} onChange={handleSearchChange} />
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-        <table className="min-w-full divide-y divide-neutral-200 text-sm">
-          <thead className="bg-neutral-50">
+      <div className="overflow-x-auto rounded-lg border border-sp-border bg-sp-surface">
+        <table className="min-w-full divide-y divide-sp-border text-sm">
+          <thead className="bg-sp-bg-m1">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((header) => {
@@ -268,13 +210,13 @@ export function LinksTable(): React.JSX.Element {
                       key={header.id}
                       scope="col"
                       aria-sort={ariaSort}
-                      className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-700"
+                      className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-sp-fg-muted"
                     >
                       {canSort ? (
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="inline-flex items-center gap-1 rounded text-left hover:text-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
+                          className="inline-flex items-center gap-1 rounded text-left hover:text-sp-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-sp-accent"
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {sortDir === 'asc' ? <span aria-hidden="true">\u25b2</span> : null}
@@ -288,20 +230,20 @@ export function LinksTable(): React.JSX.Element {
                 })}
                 <th
                   scope="col"
-                  className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-neutral-700"
+                  className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-sp-fg-muted"
                 >
                   Acciones
                 </th>
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-sp-border">
             {table.getRowModel().rows.map((row) => {
               const link = row.original;
               return (
-                <tr key={row.id} className="hover:bg-neutral-50">
+                <tr key={row.id} className="hover:bg-sp-bg-surface-hover">
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2 align-middle text-neutral-800">
+                    <td key={cell.id} className="px-3 py-2 align-middle text-sp-fg">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -321,7 +263,7 @@ export function LinksTable(): React.JSX.Element {
                         href={link.original_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
+                        className="inline-flex h-8 items-center justify-center rounded-md border border-sp-border bg-sp-bg px-3 text-sm font-medium text-sp-fg transition-colors hover:bg-sp-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-sp-accent"
                         aria-label={`Abrir ${link.original_url} en una nueva pesta\u00f1a`}
                       >
                         Abrir
@@ -395,7 +337,7 @@ function Pagination({
   return (
     <nav
       aria-label="Paginaci\u00f3n de enlaces"
-      className="flex items-center justify-between text-sm text-neutral-600"
+      className="flex items-center justify-between text-sm text-sp-fg-muted"
     >
       <span>
         P\u00e1gina {page} de {totalPages}

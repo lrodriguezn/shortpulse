@@ -107,15 +107,15 @@ export function CreateLinkForm(): React.JSX.Element {
   return (
     <form
       aria-labelledby="create-link-title"
-      className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-4 rounded-lg border border-sp-border bg-sp-surface p-4 shadow-sm"
       onSubmit={onSubmit}
       noValidate
     >
       <header>
-        <h2 id="create-link-title" className="text-base font-semibold text-neutral-900">
+        <h2 id="create-link-title" className="text-base font-semibold text-sp-fg">
           Crear enlace
         </h2>
-        <p className="mt-1 text-sm text-neutral-600">
+        <p className="mt-1 text-sm text-sp-fg-dim">
           Pega una URL y, si quieres, un slug personalizado.
         </p>
       </header>
