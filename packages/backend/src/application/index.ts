@@ -51,3 +51,31 @@ export {
   type DeleteLinkInput,
   type DeleteLinkDeps,
 } from './delete-link.use-case.js';
+
+// Get-analytics-summary use-case (WU5 — slice 5b)
+export {
+  GetAnalyticsSummaryUseCase,
+  type GetAnalyticsSummaryInput,
+  type GetAnalyticsSummaryOutput,
+  type GetAnalyticsSummaryDeps,
+} from './get-analytics-summary.use-case.js';
+
+// List-analytics use-case (WU6 — slice 5b)
+export {
+  ListAnalyticsUseCase,
+  DELETED_LINK_LABEL,
+  type ListAnalyticsInput,
+  type ListAnalyticsOutput,
+  type AnalyticsEventWithLabel,
+  type ListAnalyticsDeps,
+} from './list-analytics.use-case.js';
+
+// Get-timeseries use-case (WU7 — slice 5b)
+export {
+  GetTimeseriesUseCase,
+  DEFAULT_TIMESERIES_WINDOW_DAYS,
+  type GetTimeseriesInput,
+  type GetTimeseriesOutput,
+  type TimeseriesGranularity,
+  type GetTimeseriesDeps,
+} from './get-timeseries.use-case.js';
