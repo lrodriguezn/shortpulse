@@ -20,7 +20,7 @@ React admin SPA and the JSON API over the same port.
 
 ```sh
 # 1. Clone, install, configure
-git clone <repo> shortpulse && cd shortpulse
+git clone https://github.com/lrodriguezn/shortpulse.git shortpulse && cd shortpulse
 pnpm install
 cp .env.example .env
 
@@ -77,7 +77,7 @@ For a production-style run, skip straight to
 
 ```sh
 # 1. Clone + install deps (pnpm workspaces auto-install across packages)
-git clone <repo> shortpulse && cd shortpulse
+git clone https://github.com/lrodriguezn/shortpulse.git shortpulse && cd shortpulse
 pnpm install
 
 # 2. Configure environment
