@@ -1,5 +1,5 @@
 packages:
-  - "packages/*"
+  - 'packages/*'
 
 # pnpm 11+ uses `allowBuilds` to whitelist packages whose install scripts
 # may run. We only need esbuild (native binary download).

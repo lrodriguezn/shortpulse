@@ -4,13 +4,15 @@
   "private": true,
   "description": "URL shortener web app with analytics",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "dev": "pnpm -r --parallel --if-present run dev",
     "build": "pnpm -r --if-present run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "echo 'lint: configure in WU2'",
-    "format": "echo 'format: configure in WU2'",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc -b"
   },
   "engines": {
@@ -18,8 +20,14 @@
     "pnpm": ">=9.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^20.19.43",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "globals": "^15.15.0",
+    "prettier": "^3.9.4",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^2.1.9"
   }
 }

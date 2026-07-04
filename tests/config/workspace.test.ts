@@ -25,9 +25,7 @@ describe('monorepo workspace structure', () => {
 
   it('scopes the three workspace packages under @shortpulse/* and keeps them private', () => {
     for (const name of ['shared', 'backend', 'frontend']) {
-      const pkg = JSON.parse(
-        readFileSync(resolve(ROOT, 'packages', name, 'package.json'), 'utf8'),
-      );
+      const pkg = JSON.parse(readFileSync(resolve(ROOT, 'packages', name, 'package.json'), 'utf8'));
       expect(pkg.name).toBe(`@shortpulse/${name}`);
       expect(pkg.private).toBe(true);
     }

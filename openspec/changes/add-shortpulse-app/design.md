@@ -119,13 +119,13 @@ Work-unit commit slicing (per `work-unit-commits` skill): each numbered layer bu
 
 ## 3. Backend Hexagonal Layering
 
-| Layer | Contains | Depends on | External deps |
-|-------|----------|-----------|---------------|
-| `domain/` | `Link`, `AnalyticsEvent`, `Slug` VO, `slug-generator`, `url-validator`, repository **interfaces** | TS only | none |
-| `application/` | 7 use-cases + `Geolocator`/`UaParser` port interfaces | `domain` | none |
-| `infrastructure/` | Drizzle repos, MaxMind + ua-parser adapters, db client, migrator | `application` ports + `domain` interfaces | drizzle-orm, maxmind, ua-parser-js |
-| `presentation/` | Fastify plugins (thin controllers), error-mapper, static plugin | `application` use-cases + `@shortpulse/shared` | fastify, fastify-static |
-| `container.ts` | Wires implementations to ports at boot | all | drizzle, maxmind |
+| Layer             | Contains                                                                                          | Depends on                                     | External deps                      |
+| ----------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------- |
+| `domain/`         | `Link`, `AnalyticsEvent`, `Slug` VO, `slug-generator`, `url-validator`, repository **interfaces** | TS only                                        | none                               |
+| `application/`    | 7 use-cases + `Geolocator`/`UaParser` port interfaces                                             | `domain`                                       | none                               |
+| `infrastructure/` | Drizzle repos, MaxMind + ua-parser adapters, db client, migrator                                  | `application` ports + `domain` interfaces      | drizzle-orm, maxmind, ua-parser-js |
+| `presentation/`   | Fastify plugins (thin controllers), error-mapper, static plugin                                   | `application` use-cases + `@shortpulse/shared` | fastify, fastify-static            |
+| `container.ts`    | Wires implementations to ports at boot                                                            | all                                            | drizzle, maxmind                   |
 
 **Dependency rule:** compile-time arrows point inward. `infrastructure` and `presentation` are siblings assembled by `container.ts`; neither imports the other's internals directly — both reference `application` interfaces.
 
@@ -139,34 +139,45 @@ UI design happens in OpenPencil separately; this design defines only the compone
 // infrastructure/db/schema.ts
 import { pgTable, uuid, text, timestamp, index, uniqueIndex, inet } from 'drizzle-orm/pg-core';
 
-export const links = pgTable('links', {
-  id:          uuid('id').defaultRandom().primaryKey(),
-  originalUrl: text('original_url').notNull(),
-  slug:        text('slug').notNull(),
-  createdAt:   timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  deletedAt:   timestamp('deleted_at', { withTimezone: true }),
-}, (t) => ({
-  slugIdx:     uniqueIndex('links_slug_uidx').on(t.slug),
-  createdIdx:  index('links_created_at_idx').on(t.createdAt),
-}));
+export const links = pgTable(
+  'links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    originalUrl: text('original_url').notNull(),
+    slug: text('slug').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    slugIdx: uniqueIndex('links_slug_uidx').on(t.slug),
+    createdIdx: index('links_created_at_idx').on(t.createdAt),
+  }),
+);
 
-export const analytics = pgTable('analytics', {
-  id:        uuid('id').defaultRandom().primaryKey(),
-  linkId:    uuid('link_id').notNull().references(() => links.id, { onDelete: 'restrict' }),
-  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
-  ip:        text('ip').notNull(),
-  userAgent: text('user_agent'),
-  referer:   text('referer'),
-  country:   text('country'),
-  city:      text('city'),
-  browser:   text('browser'),
-}, (t) => ({
-  linkIdx:    index('analytics_link_id_idx').on(t.linkId),
-  timeIdx:    index('analytics_timestamp_desc_idx').on(t.timestamp),
-}));
+export const analytics = pgTable(
+  'analytics',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    linkId: uuid('link_id')
+      .notNull()
+      .references(() => links.id, { onDelete: 'restrict' }),
+    timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
+    ip: text('ip').notNull(),
+    userAgent: text('user_agent'),
+    referer: text('referer'),
+    country: text('country'),
+    city: text('city'),
+    browser: text('browser'),
+  },
+  (t) => ({
+    linkIdx: index('analytics_link_id_idx').on(t.linkId),
+    timeIdx: index('analytics_timestamp_desc_idx').on(t.timestamp),
+  }),
+);
 ```
 
 **Schema notes:**
+
 - `ip` is `TEXT` (spec #7/#7 resolution), not `inet` — keeps client-side obfuscation/proxy headers flexible.
 - FK `ON DELETE RESTRICT`: soft-delete sets `deleted_at`; the analytics row is never orphaned. Hard delete is intentionally blocked at the DB level.
 - Slug stored **lowercased**; the unique index enforces case-insensitive collision (no `CITEXT` needed because normalization happens at write time).
@@ -183,10 +194,10 @@ All errors use RFC 7807 problem-details (content-type `application/problem+json`
 ```typescript
 // shared/src/schemas/problem.ts
 export const problemDetailsSchema = z.object({
-  type:     z.string().url().default('about:blank'),
-  title:    z.string(),
-  status:   z.number().int(),
-  detail:   z.string().optional(),
+  type: z.string().url().default('about:blank'),
+  title: z.string(),
+  status: z.number().int(),
+  detail: z.string().optional(),
   instance: z.string().optional(),
 });
 ```
@@ -196,31 +207,34 @@ export const problemDetailsSchema = z.object({
 ```typescript
 // createLinkSchema
 export const createLinkSchema = z.object({
-  original_url: z.string().url().refine(
-    (u) => /^https?:\/\//.test(u),
-    { message: "Must be an http or https URL" }
-  ),                                                            // http/https only — z.string().url() alone accepts ftp/file/data
-  slug: z.string().regex(/^(?!-)[a-z0-9-]{3,20}(?<!-)$/).optional(),  // lowercase-normalized by BE; no leading/trailing hyphen
+  original_url: z
+    .string()
+    .url()
+    .refine((u) => /^https?:\/\//.test(u), { message: 'Must be an http or https URL' }), // http/https only — z.string().url() alone accepts ftp/file/data
+  slug: z
+    .string()
+    .regex(/^(?!-)[a-z0-9-]{3,20}(?<!-)$/)
+    .optional(), // lowercase-normalized by BE; no leading/trailing hyphen
 });
 
 // listLinksQuerySchema
 export const listLinksQuerySchema = z.object({
-  search:   z.string().optional(),
-  sortBy:   z.enum(['created_at','original_url','slug','click_count']).default('created_at'),
-  sortDir:  z.enum(['asc','desc']).default('desc'),
-  page:     z.coerce.number().int().min(1).default(1),
-  page_size:z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().optional(),
+  sortBy: z.enum(['created_at', 'original_url', 'slug', 'click_count']).default('created_at'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+  page: z.coerce.number().int().min(1).default(1),
+  page_size: z.coerce.number().int().min(1).max(100).default(20),
 });
 
 // linkResponseSchema (list + create)
 export const linkResponseSchema = z.object({
-  id:          z.string().uuid(),
-  original_url:z.string().url(),
-  slug:        z.string(),
-  short_url:   z.string().url(),
-  created_at:  z.string().datetime(),
+  id: z.string().uuid(),
+  original_url: z.string().url(),
+  slug: z.string(),
+  short_url: z.string().url(),
+  created_at: z.string().datetime(),
   click_count: z.number().int(),
-  deleted_at:  z.string().datetime().nullable(),
+  deleted_at: z.string().datetime().nullable(),
 });
 
 // summarySchema  →  { total_links, total_clicks, clicks_today, clicks_last_7_days }
@@ -232,22 +246,23 @@ export const linkResponseSchema = z.object({
 
 ### Endpoint table
 
-| # | Method | Path | Request | Success | Errors |
-|---|--------|------|---------|---------|--------|
-| 1 | POST | `/api/links` | `createLinkSchema` body | 201 `linkResponseSchema` | 400 (bad url/slug), 409 (collision/reserved) |
-| 2 | GET | `/api/links` | `listLinksQuerySchema` query | 200 `{data: linkResponseSchema[], total, page, page_size}` | 400 |
-| 3 | DELETE | `/api/links/:id` | uuid path | 204 | 404 (not found & not-deleted), (idempotent 204 if already deleted) |
-| 4 | GET | `/:slug` | path | 302 `Location: <original_url>` | 404 (not found/deleted); reserved routes NOT handled here |
-| 5 | GET | `/api/analytics/summary` | — | 200 `{total_links, total_clicks, clicks_today, clicks_last_7_days}` | 500 |
-| 6 | GET | `/api/analytics` | `eventsQuerySchema` | 200 `{data: eventRowSchema[], total, page, page_size}` | 400 |
-| 7 | GET | `/api/analytics/timeseries` | `timeseriesQuerySchema` | 200 `{data: timeseriesRowSchema[]}` | 400 |
-| 8 | GET | `/health` | — | 200 `{status:"ok", db:"connected"}` / 503 `{status:"degraded", db:"disconnected"}` | — |
+| #   | Method | Path                        | Request                      | Success                                                                            | Errors                                                             |
+| --- | ------ | --------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 1   | POST   | `/api/links`                | `createLinkSchema` body      | 201 `linkResponseSchema`                                                           | 400 (bad url/slug), 409 (collision/reserved)                       |
+| 2   | GET    | `/api/links`                | `listLinksQuerySchema` query | 200 `{data: linkResponseSchema[], total, page, page_size}`                         | 400                                                                |
+| 3   | DELETE | `/api/links/:id`            | uuid path                    | 204                                                                                | 404 (not found & not-deleted), (idempotent 204 if already deleted) |
+| 4   | GET    | `/:slug`                    | path                         | 302 `Location: <original_url>`                                                     | 404 (not found/deleted); reserved routes NOT handled here          |
+| 5   | GET    | `/api/analytics/summary`    | —                            | 200 `{total_links, total_clicks, clicks_today, clicks_last_7_days}`                | 500                                                                |
+| 6   | GET    | `/api/analytics`            | `eventsQuerySchema`          | 200 `{data: eventRowSchema[], total, page, page_size}`                             | 400                                                                |
+| 7   | GET    | `/api/analytics/timeseries` | `timeseriesQuerySchema`      | 200 `{data: timeseriesRowSchema[]}`                                                | 400                                                                |
+| 8   | GET    | `/health`                   | —                            | 200 `{status:"ok", db:"connected"}` / 503 `{status:"degraded", db:"disconnected"}` | —                                                                  |
 
 **Collision error body (custom slug):** `detail` = `"Ese slug ya existe, prueba otro"` (409). Per spec this literal is the UX string; the FE shows it verbatim in a sonner toast.
 
 ### Concrete examples
 
 **Create link request → response (201):**
+
 ```http
 POST /api/links
 Content-Type: application/json
@@ -267,6 +282,7 @@ HTTP/1.1 201 Created
 ```
 
 **Redirect (302):**
+
 ```http
 GET /abc HTTP/1.1
 
@@ -275,6 +291,7 @@ Location: https://example.com
 ```
 
 **409 collision:**
+
 ```http
 HTTP/1.1 409 Conflict
 Content-Type: application/problem+json
@@ -412,13 +429,15 @@ sequenceDiagram
 ## 7. Frontend Architecture
 
 **Route tree (TanStack Router, file-based):**
-| File | Path | Component |
-|------|------|-----------|
-| `routes/links.tsx` | `/` | `LinksPage` |
+
+| File                   | Path         | Component       |
+| ---------------------- | ------------ | --------------- |
+| `routes/links.tsx`     | `/`          | `LinksPage`     |
 | `routes/analytics.tsx` | `/analytics` | `AnalyticsPage` |
-| `routes/not-found.tsx` | `*` | `NotFoundPage` |
+| `routes/not-found.tsx` | `*`          | `NotFoundPage`  |
 
 **Feature folders:**
+
 ```
 features/links/
   components/{create-link-form.tsx, links-table.tsx, links-row.tsx, empty-state.tsx}
@@ -432,48 +451,51 @@ components/ui/{button, input, table, spinner, toast.tsx, error-boundary.tsx}
 ```
 
 **Server state — TanStack Query keys convention:**
+
 ```typescript
 // lib/query-keys.ts
 export const qk = {
   links: {
-    all:    ['links'] as const,
-    list:   (params) => ['links','list', params] as const,
+    all: ['links'] as const,
+    list: (params) => ['links', 'list', params] as const,
   },
   analytics: {
-    summary:    ['analytics','summary'] as const,
-    events:     (params) => ['analytics','events', params] as const,
-    timeseries: (params) => ['analytics','timeseries', params] as const,
+    summary: ['analytics', 'summary'] as const,
+    events: (params) => ['analytics', 'events', params] as const,
+    timeseries: (params) => ['analytics', 'timeseries', params] as const,
   },
 };
 ```
 
 **Form:** `useForm({ resolver: zodResolver(createLinkSchema) })` — same schema imported from `@shortpulse/shared`, zero drift. On 409 the mutation `onError` fires `sonner.error(detail)`.
 
-**UI design:** OpenPencil phase (separate). This design only fixes the component *contract* — props, hooks, query keys — not the visual design.
+**UI design:** OpenPencil phase (separate). This design only fixes the component _contract_ — props, hooks, query keys — not the visual design.
 
 ---
 
 ## 8. Slug Generation Algorithm
 
-| Attribute | Value |
-|-----------|-------|
-| Auto alphabet | `"ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"` — **exactly 54 chars** (see count verification below). Mixed-case. Excludes ambiguous `0`, `O`, `1`, `l`, **and additionally `I`, `i`, `L`, `o`** to reach the spec-mandated 54 while removing every visually-confusable pair. |
-| Auto length | 7 |
-| Entropy | `54^7 ≈ 1.42 × 10¹²` combos (~40.5 bits). Birthday collision ~50% only after ~1.2 × 10⁶ entries; at VPS scale negligible. |
-| RNG | `crypto.randomBytes` (Node built-in, CSPRNG) |
-| Retry | up to 3 attempts on unique-constraint violation; reject `b % 54` modulo bias (negligible at 54 divisor; accepted) |
-| Fallback after 3 fails | 500 problem-details `"Slug generation failed"` |
+| Attribute              | Value                                                                                                                                                                                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auto alphabet          | `"ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"` — **exactly 54 chars** (see count verification below). Mixed-case. Excludes ambiguous `0`, `O`, `1`, `l`, **and additionally `I`, `i`, `L`, `o`** to reach the spec-mandated 54 while removing every visually-confusable pair. |
+| Auto length            | 7                                                                                                                                                                                                                                                                                         |
+| Entropy                | `54^7 ≈ 1.42 × 10¹²` combos (~40.5 bits). Birthday collision ~50% only after ~1.2 × 10⁶ entries; at VPS scale negligible.                                                                                                                                                                 |
+| RNG                    | `crypto.randomBytes` (Node built-in, CSPRNG)                                                                                                                                                                                                                                              |
+| Retry                  | up to 3 attempts on unique-constraint violation; reject `b % 54` modulo bias (negligible at 54 divisor; accepted)                                                                                                                                                                         |
+| Fallback after 3 fails | 500 problem-details `"Slug generation failed"`                                                                                                                                                                                                                                            |
 
 **Alphabet count verification (54 chars):**
+
 - Uppercase `ABCDEFGHJKMNPQRSTUVWXYZ` = 23 chars → A–Z minus `{I, L, O}` (3 removed).
 - Lowercase `abcdefghjkmnpqrstuvwxyz` = 23 chars → a–z minus `{i, l, o}` (3 removed).
 - Digits `23456789` = 8 chars → 0 and 1 removed.
 - Total = 23 + 23 + 8 = **54**. ✓ Matches spec #5.
 
 **Mixed-case generation vs lowercase storage:**
-The generator produces mixed-case output, but the storage layer lowercases the slug before `INSERT` (per the case-insensitive redirect rule, spec #4, and the `links_slug_uidx` unique index). The 54-char mixed alphabet preserves full entropy at *generation* time (collision-resistance space = `54^7`); after lowering, the stored representation collapses to ~31 distinct lowercase-or-digit chars per position, so storage-layer collision probability is higher than the generation space suggests — but the unique index + 3-retry loop detects and recovers from any storage-level collision. Net: entropy is decided at generation, collisions are decided at storage, both are bounded correctly.
+The generator produces mixed-case output, but the storage layer lowercases the slug before `INSERT` (per the case-insensitive redirect rule, spec #4, and the `links_slug_uidx` unique index). The 54-char mixed alphabet preserves full entropy at _generation_ time (collision-resistance space = `54^7`); after lowering, the stored representation collapses to ~31 distinct lowercase-or-digit chars per position, so storage-layer collision probability is higher than the generation space suggests — but the unique index + 3-retry loop detects and recovers from any storage-level collision. Net: entropy is decided at generation, collisions are decided at storage, both are bounded correctly.
 
 **Custom slug validation:**
+
 - Normalize: `slug.toLowerCase().trim()`.
 - Regex: `^(?!-)[a-z0-9-]{3,20}(?<!-)$` — charset `[a-z0-9-]`, length 3–20, **MUST NOT start or end with a hyphen** (spec amendment, see ADR-006 + Open Questions).
 - Reserved set: `{'analytics','api','health','admin','links','www','favicon',''}` (case-folded before check).
@@ -491,12 +513,19 @@ export interface Geolocator {
 // infrastructure/maxmind-geolocator.ts
 export class MaxMindGeolocator implements Geolocator {
   constructor(private reader: Reader<MaxMindDbModel>) {}
-  lookup(ip) { const r = this.reader.get(ip); return r ? { country: r.country?.iso_code ?? null, city: r.city?.names?.en ?? null } : { country: null, city: null }; }
+  lookup(ip) {
+    const r = this.reader.get(ip);
+    return r
+      ? { country: r.country?.iso_code ?? null, city: r.city?.names?.en ?? null }
+      : { country: null, city: null };
+  }
 }
 
 // infrastructure/dummy-geolocator.ts — used in tests + when DB absent
 export class DummyGeolocator implements Geolocator {
-  lookup() { return { country: null, city: null }; }
+  lookup() {
+    return { country: null, city: null };
+  }
 }
 ```
 
@@ -506,15 +535,16 @@ export class DummyGeolocator implements Geolocator {
 
 ## 10. Testing Architecture
 
-| Layer | What | How | Naming |
-|-------|------|-----|--------|
-| Unit | `slug-generator`, `slug-validator`, `url-validator`, use-cases with mocked ports/repos | Vitest | `*.test.ts` |
+| Layer       | What                                                                                                     | How                                                                                                  | Naming                              |
+| ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Unit        | `slug-generator`, `slug-validator`, `url-validator`, use-cases with mocked ports/repos                   | Vitest                                                                                               | `*.test.ts`                         |
 | Integration | full HTTP→DB: every endpoint, redirect+sync analytics, error mapping, reserved routes, soft-delete + 404 | Fastify `inject` + testcontainers PostgreSQL (`@testcontainers/postgresql`); real migrations applied | `*.test.ts` in `tests/integration/` |
-| E2E | create link → redirect → analytics visible → delete → 404 | Playwright against `docker compose up` stack | `*.e2e.spec.ts` in `frontend/e2e/` |
+| E2E         | create link → redirect → analytics visible → delete → 404                                                | Playwright against `docker compose up` stack                                                         | `*.e2e.spec.ts` in `frontend/e2e/`  |
 
 **Coverage:** `@vitest/coverage-v8`, threshold **90%** global + per-package (`packages/shared`, `backend`, `frontend` each enforce). CI fails on drop.
 
 **Rigour:**
+
 - `DummyGeolocator` + mock `UaParser` injected at integration level — no network/MaxMind file dependency.
 - `MaxMindGeolocator` has one opt-in test gated on `GEOIP_DB_PATH` present.
 - TDD: each work unit commits red-then-green.
@@ -524,11 +554,13 @@ export class DummyGeolocator implements Geolocator {
 ## 11. Docker Strategy
 
 **`docker/Dockerfile` (multi-stage):**
+
 - `deps` — `node:20-slim`, corepack pnpm, `pnpm fetch` (lockfile only) → cached layer.
 - `build` — copy sources, `pnpm install --frozen-lockfile`, `pnpm --filter frontend build`, `pnpm --filter backend build`, copy GeoLite2 mmdb (download via `geoip2` in build arg or mount).
 - `runtime` — `node:20-slim`, `pnpm --filter backend deploy --prod backend` (or copy `dist` + `package.json` + `node_modules`), copy `frontend/dist`. EXPOSE 3000. ENTRYPOINT `entrypoint.sh`.
 
 **`entrypoint.sh`:**
+
 ```sh
 #!/bin/sh
 set -e
@@ -537,31 +569,54 @@ exec node dist/index.js                    # Fastify boot, serves SPA + API
 ```
 
 **Healthcheck:** `node:20-slim` ships neither `wget` nor `curl`, so the HEALTHCHECK uses Node 20's global `fetch` directly:
+
 ```
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 ```
+
 No `apt-get install` needed; no extra image layers.
 
 **`docker-compose.yml`:**
+
 ```yaml
 services:
   app:
     build: { context: ., dockerfile: docker/Dockerfile }
-    ports: ["3000:3000"]
+    ports: ['3000:3000']
     environment:
       DATABASE_URL: postgres://shortpulse:shortpulse@postgres:5432/shortpulse
-      PORT: "3000"
+      PORT: '3000'
       BASE_URL: http://localhost:3000
       GEOIP_DB_PATH: /app/geoip/GeoLite2-City.mmdb
     depends_on: { postgres: { condition: service_healthy } }
-    healthcheck: { test: ["CMD","node","-e","fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"], interval: "30s", timeout: "5s", retries: "3", start_period: "10s" }
+    healthcheck:
+      {
+        test:
+          [
+            'CMD',
+            'node',
+            '-e',
+            "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          ],
+        interval: '30s',
+        timeout: '5s',
+        retries: '3',
+        start_period: '10s',
+      }
     restart: unless-stopped
   postgres:
     image: postgres:16-alpine
-    environment: { POSTGRES_USER: shortpulse, POSTGRES_PASSWORD: shortpulse, POSTGRES_DB: shortpulse }
+    environment:
+      { POSTGRES_USER: shortpulse, POSTGRES_PASSWORD: shortpulse, POSTGRES_DB: shortpulse }
     volumes: [pgdata:/var/lib/postgresql/data]
-    healthcheck: { test: ["CMD-SHELL","pg_isready -U shortpulse"], interval: "10s", timeout: "5s", retries: "5" }
+    healthcheck:
+      {
+        test: ['CMD-SHELL', 'pg_isready -U shortpulse'],
+        interval: '10s',
+        timeout: '5s',
+        retries: '5',
+      }
     restart: unless-stopped
 volumes: { pgdata: {} }
 ```
@@ -571,31 +626,37 @@ volumes: { pgdata: {} }
 ## 12. Architecture Decision Records
 
 ### ADR-001: Fastify + Drizzle over Express/NestJS + Prisma
+
 **Choice:** Fastify + Drizzle ORM.
 **Alternatives:** Express+Prisma (heavier, runtime codegen), NestJS (DI framework overhead, smaller API), Hono (less mature PG tooling).
 **Rationale:** TS-first; best-in-class performance (critical on redirect hot path); `light-my-request` inject enables fast TDD without HTTP; Drizzle has no codegen step and mocks cleanly under repository pattern — directly supports hexagonal layering.
 
 ### ADR-002: Sync analytics write on redirect
+
 **Choice:** insert analytics row, then `302`.
 **Alternatives:** async fire-and-forget (lost on crash), queue+worker (infra complexity).
 **Rationale:** 5-15ms added is imperceptible next to browser navigation; one code path = simpler TDD + 90% coverage; guaranteed capture is a spec requirement; documented exit to async queue if growth demands (Proposal risk-row).
 
 ### ADR-003: Single container serves SPA + API (Dokploy)
+
 **Choice:** Fastify serves built frontend as `fastify-static`; one port, one container.
 **Alternatives:** nginx reverse proxy + separate API container (more complex on a VPS), Next.js SSR (out of scope).
 **Rationale:** Dokploy One-Service simplicity; no CORS; correct for VPS scale; split to nginx+API later is mechanical. Scaling risk acknowledged in proposal.
 
 ### ADR-004: Soft-delete links with analytics retention (FK RESTRICT)
+
 **Choice:** `deleted_at` column + `ON DELETE RESTRICT` FK + render `"(deleted link)"` in analytics.
 **Alternatives:** hard delete (destroys report history), separate archive table (read complexity).
 **Rationale:** reporting integrity > storage savings; totals KPI explicitly counts deleted-link clicks (spec #2/#5); `"(deleted link)"` literal is the spec-locked rendering token (obs #7).
 
 ### ADR-005: MaxMind GeoLite2 local DB over HTTP geolocation APIs
+
 **Choice:** MaxMind GeoLite2-City `.mmdb` read from disk; `Geolocator` port with `DummyGeolocator` fallback.
 **Alternatives:** ip-api/ipinfo (per-call network latency + rate limits + rate limits + key mgmt), Cloudflare headers (lock-in).
 **Rationale:** offline + free + zero rate limits; interface makes MaxMind trivially mockable; degrade-to-null when DB file absent. Mitigation for staleness: rebuild image regularly (proposal risk row).
 
 ### ADR-006: Reject leading/trailing hyphens in custom slugs (micro-decision)
+
 **Choice:** regex `^(?!-)[a-z0-9-]{3,20}(?<!-)$`.
 **Alternatives:** allow `-my-link-` (resolves address-bar ambiguity, looks broken).
 **Rationale:** spec risk note flagged this open; cleaner UX and unambiguous normalization. **This is no longer a design-only tightening** — the links spec (#6 Slug validation rules) has been amended (see "Gate-fix applied" below) so the design regex `^(?!-)[a-z0-9-]{3,20}(?<!-)$` is now spec-locked, not a design override. Design and spec are aligned.
@@ -604,19 +665,19 @@ volumes: { pgdata: {} }
 
 ## File Changes
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `packages/shared/**` | Create | Zod contract, constants, types — FE/BE drift-free |
-| `packages/backend/src/domain/**` | Create | Pure entities, slug/url logic, repo interfaces |
-| `packages/backend/src/application/**` | Create | 7 use-cases + ports |
-| `packages/backend/src/infrastructure/**` | Create | Drizzle repos, adapters, db client, migrator |
-| `packages/backend/src/presentation/**` | Create | Fastify plugins, error-mapper, static |
-| `packages/backend/drizzle/**` | Create | Generated migrations |
-| `packages/frontend/src/**` | Create | SPA: routes, features, ui primitives, lib |
-| `docker/{Dockerfile,docker-compose.yml,entrypoint.sh}` | Create | Build + orchestration |
-| `README.md`, `LICENSE` | Create | Docs (install, Docker, env vars, architecture, tests) + MIT |
-| `openspec/specs/{links,analytics,health}/spec.md` | (already filled) | No change in design |
-| Nothing deleted | — | Greenfield |
+| File                                                   | Action           | Purpose                                                     |
+| ------------------------------------------------------ | ---------------- | ----------------------------------------------------------- |
+| `packages/shared/**`                                   | Create           | Zod contract, constants, types — FE/BE drift-free           |
+| `packages/backend/src/domain/**`                       | Create           | Pure entities, slug/url logic, repo interfaces              |
+| `packages/backend/src/application/**`                  | Create           | 7 use-cases + ports                                         |
+| `packages/backend/src/infrastructure/**`               | Create           | Drizzle repos, adapters, db client, migrator                |
+| `packages/backend/src/presentation/**`                 | Create           | Fastify plugins, error-mapper, static                       |
+| `packages/backend/drizzle/**`                          | Create           | Generated migrations                                        |
+| `packages/frontend/src/**`                             | Create           | SPA: routes, features, ui primitives, lib                   |
+| `docker/{Dockerfile,docker-compose.yml,entrypoint.sh}` | Create           | Build + orchestration                                       |
+| `README.md`, `LICENSE`                                 | Create           | Docs (install, Docker, env vars, architecture, tests) + MIT |
+| `openspec/specs/{links,analytics,health}/spec.md`      | (already filled) | No change in design                                         |
+| Nothing deleted                                        | —                | Greenfield                                                  |
 
 ---
 
@@ -652,7 +713,7 @@ Covered in §10. TLS-aware E2E not required (no TLS in container — terminated 
 
 Resolved during the design gate re-review — recorded here so the `sdd-tasks` phase has a clean trail:
 
-- ✅ **FIX 1 (CRITICAL) — Slug alphabet drift.** §8 alphabet was `"abcdefghijkmnpqrstuvwxyz23456789"` (32 chars, and it incorrectly included `i`). Replaced with the spec-mandated **54-char mixed-case** alphabet `ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789` (23 upper + 23 lower + 8 digits = 54, verified). Excludes `0, O, 1, l` (spec #5) **and** additionally `I, i, L, o` to reach 54 while removing every visually-confusable pair. Entropy statement `54^7 ≈ 1.42 × 10¹²` is now correct *for the 54-char alphabet* (the prior text claimed 54 but used 32). Documented that the generator emits mixed-case while the storage layer lowercases before insert — unique index + 3-retry loop handles any storage-level collapse.
+- ✅ **FIX 1 (CRITICAL) — Slug alphabet drift.** §8 alphabet was `"abcdefghijkmnpqrstuvwxyz23456789"` (32 chars, and it incorrectly included `i`). Replaced with the spec-mandated **54-char mixed-case** alphabet `ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789` (23 upper + 23 lower + 8 digits = 54, verified). Excludes `0, O, 1, l` (spec #5) **and** additionally `I, i, L, o` to reach 54 while removing every visually-confusable pair. Entropy statement `54^7 ≈ 1.42 × 10¹²` is now correct _for the 54-char alphabet_ (the prior text claimed 54 but used 32). Documented that the generator emits mixed-case while the storage layer lowercases before insert — unique index + 3-retry loop handles any storage-level collapse.
 - ✅ **FIX 2 (NOTED) — Leading/trailing hyphen restriction exceeds spec.** ADR-006 tightened the spec's `^[a-z0-9-]{3,20}$` to `^(?!-)[a-z0-9-]{3,20}(?<!-)$` without a matching spec delta. Option (a) applied: **`openspec/specs/links/spec.md` requirement #6 (Slug validation rules) is amended** to mandate the no-leading/trailing-hyphen rule and the regex `^(?!-)[a-z0-9-]{3,20}(?<!-)$`. Design and spec are now aligned; ADR-006 updated to note the amendment.
 - ✅ **FIX 3 (MINOR) — URL validation refine.** `z.string().url()` accepts `ftp://`, `file://`, `data:`, etc. `createLinkSchema.original_url` now uses `z.string().url().refine(u => /^https?:\/\//.test(u), "Must be an http or https URL")`. Matches spec #1 ("valid HTTP/HTTPS URL"). Response schemas unchanged (server-produced URLs).
 - ✅ **FIX 4 (MINOR) — Docker HEALTHCHECK wget not in node:20-slim.** `node:20-slim` ships neither `wget` nor `curl`. HEALTHCHECK rewritten to use Node 20's global `fetch`: `node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"`. No `apt-get install`, no extra layers. Both `Dockerfile` HEALTHCHECK and `docker-compose.yml` healthcheck updated.

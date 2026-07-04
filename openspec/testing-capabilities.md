@@ -10,11 +10,11 @@
 
 ## Test Layers
 
-| Layer       | Available | Tool                          |
-| ----------- | --------- | ----------------------------- |
-| Unit        | ✅        | Vitest + @vitest/coverage-v8  |
+| Layer       | Available | Tool                                                                        |
+| ----------- | --------- | --------------------------------------------------------------------------- |
+| Unit        | ✅        | Vitest + @vitest/coverage-v8                                                |
 | Integration | ✅        | Vitest + light-my-request (Fastify injection) + testcontainers (PostgreSQL) |
-| E2E         | ✅        | Playwright                    |
+| E2E         | ✅        | Playwright                                                                  |
 
 ## Coverage
 
@@ -24,11 +24,11 @@
 
 ## Quality Tools
 
-| Tool         | Available | Command                  |
-| ------------ | --------- | ------------------------ |
-| Linter       | ✅        | `pnpm lint`              |
-| Type checker | ✅        | `pnpm typecheck`         |
-| Formatter    | ✅        | `pnpm format`            |
+| Tool         | Available | Command          |
+| ------------ | --------- | ---------------- |
+| Linter       | ✅        | `pnpm lint`      |
+| Type checker | ✅        | `pnpm typecheck` |
+| Formatter    | ✅        | `pnpm format`    |
 
 ## TDD Workflow
 
@@ -40,6 +40,7 @@
 ## Test Categories
 
 ### Unit Tests
+
 - Slug generation (random, custom, validation)
 - URL validation (Zod schemas)
 - Repository interfaces (mock implementations)
@@ -47,12 +48,14 @@
 - Utility functions (date formatting, analytics aggregation)
 
 ### Integration Tests
+
 - API endpoints (Fastify injection via `light-my-request`)
 - Database operations (testcontainers PostgreSQL)
 - Redirect flow with analytics registration
 - CRUD operations for links and analytics
 
 ### E2E Tests (Playwright)
+
 - Create link flow (form submission, validation, success toast)
 - Redirect + analytics registration (visit short URL, verify analytics event)
 - Delete link (confirm modal, verify removal from table)

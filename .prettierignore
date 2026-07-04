@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Lockfiles (auto-generated)
+pnpm-lock.yaml
+
+# OpenSpec & docs (intentional formatting)
+openspec/
+docs/
+
+# Agent / IDE
+.atl/
+.vscode/
+.idea/
+.DS_Store

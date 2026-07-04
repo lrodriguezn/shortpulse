@@ -42,6 +42,7 @@ shortpulse/
 ```
 
 **What goes in `shared`:**
+
 - Zod schemas for all API request/response contracts (`createLinkSchema`, `linkResponseSchema`, `analyticsQuerySchema`, etc.)
 - TypeScript types inferred from Zod (`z.infer<typeof createLinkSchema>`)
 - Slug validation regex and character set constants
@@ -67,6 +68,7 @@ shortpulse/
 ```
 
 **Domain layer (`domain/`):**
+
 - `Link` entity: `{ id, originalUrl, slug, createdAt }`
 - `AnalyticsEvent` entity: `{ id, linkId, timestamp, ip, userAgent, referer, country, city, browser }`
 - `SlugGenerator` — pure function: `generateSlug(length: number): string`
@@ -75,6 +77,7 @@ shortpulse/
 - Repository interfaces: `LinkRepository`, `AnalyticsRepository` (defined here, implemented in infra)
 
 **Application layer (`application/`):**
+
 - `CreateLinkService(linkRepo, slugGen)` — orchestrates link creation, handles custom slug + collision
 - `RedirectService(linkRepo, analyticsService)` — looks up slug, triggers analytics, returns redirect target
 - `AnalyticsService(analyticsRepo)` — aggregates data for dashboard queries
@@ -82,12 +85,14 @@ shortpulse/
 - `ListLinksService(linkRepo)` — paginated search with sorting
 
 **Infrastructure layer (`infrastructure/`):**
+
 - `DrizzleLinkRepository` implements `LinkRepository`
 - `DrizzleAnalyticsRepository` implements `AnalyticsRepository`
 - `MaxMindGeolocator` implements `Geolocator` interface
 - `UaParserJsAdapter` implements `UserAgentParser` interface
 
 **Presentation layer (`presentation/`):**
+
 - Fastify plugin per domain: `linksPlugin`, `analyticsPlugin`, `healthPlugin`
 - Controllers are thin — parse request, call service, format response
 
@@ -107,13 +112,13 @@ const createLinkService = new CreateLinkService(linkRepo, slugGen);
 
 ## 3. Slug Generation Strategy
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Character set | `ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789` | Excludes ambiguous: `0/O`, `1/l/I`, `8/B` confusion reduced. 54 chars. |
-| Algorithm | `crypto.randomBytes` (Node built-in) | No dependency. Cryptographically secure. Nanoid adds a dep for marginal benefit. |
-| Length | 7 characters | 54^7 ≈ 1.4 trillion combinations. Collision probability negligible at expected scale. |
-| Collision handling | Retry up to 3 times on unique-constraint violation | Simple, correct. If 3 retries fail (astronomically unlikely), return error. |
-| Custom slug validation | Regex: `/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,60}[a-zA-Z0-9])?$/` | Letters, numbers, hyphens. No leading/trailing hyphens. 1-62 chars. |
+| Decision               | Choice                                                   | Rationale                                                                             |
+| ---------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Character set          | `ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789` | Excludes ambiguous: `0/O`, `1/l/I`, `8/B` confusion reduced. 54 chars.                |
+| Algorithm              | `crypto.randomBytes` (Node built-in)                     | No dependency. Cryptographically secure. Nanoid adds a dep for marginal benefit.      |
+| Length                 | 7 characters                                             | 54^7 ≈ 1.4 trillion combinations. Collision probability negligible at expected scale. |
+| Collision handling     | Retry up to 3 times on unique-constraint violation       | Simple, correct. If 3 retries fail (astronomically unlikely), return error.           |
+| Custom slug validation | Regex: `/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,60}[a-zA-Z0-9])?$/` | Letters, numbers, hyphens. No leading/trailing hyphens. 1-62 chars.                   |
 
 **Implementation sketch:**
 
@@ -131,15 +136,16 @@ export function generateSlug(length = 7): string {
 
 ## 4. Redirect + Analytics Flow (Hot Path)
 
-| Approach | Latency | Reliability | Complexity | Testability |
-|----------|---------|-------------|------------|-------------|
-| **A) Sync** — write analytics, then 302 | +5-15ms | Guaranteed | Low | High |
-| B) Async fire-and-forget — 302, write in background | 0ms added | Lost on crash | Medium | Medium |
-| C) Queue — write to queue, worker persists | 0ms added | Guaranteed | High | Low |
+| Approach                                            | Latency   | Reliability   | Complexity | Testability |
+| --------------------------------------------------- | --------- | ------------- | ---------- | ----------- |
+| **A) Sync** — write analytics, then 302             | +5-15ms   | Guaranteed    | Low        | High        |
+| B) Async fire-and-forget — 302, write in background | 0ms added | Lost on crash | Medium     | Medium      |
+| C) Queue — write to queue, worker persists          | 0ms added | Guaranteed    | High       | Low         |
 
 **Recommendation: A) Synchronous write**
 
 Rationale:
+
 - The spec prioritizes simplicity AND correctness ("registrar un evento en analytics" is a requirement, not optional)
 - 5-15ms added to a redirect is imperceptible to humans (browser navigation is 100ms+ anyway)
 - 90% test coverage target is easier with sync — one code path, no race conditions
@@ -162,16 +168,17 @@ GET /:slug
 
 ## 5. Geolocation (Country/City)
 
-| Option | Offline | Cost | Accuracy | Testability | Setup |
-|--------|---------|------|----------|-------------|-------|
-| **MaxMind GeoLite2** | ✅ Local DB | Free | Good | High (mock interface) | Download DB file |
-| ip-api.com | ❌ HTTP call | Free | Good | Medium | None |
-| ipinfo.io | ❌ HTTP call | Free tier | Good | Medium | Token |
-| Cloudflare headers | ✅ | Free | Good | Low (CF-dependent) | Behind CF |
+| Option               | Offline      | Cost      | Accuracy | Testability           | Setup            |
+| -------------------- | ------------ | --------- | -------- | --------------------- | ---------------- |
+| **MaxMind GeoLite2** | ✅ Local DB  | Free      | Good     | High (mock interface) | Download DB file |
+| ip-api.com           | ❌ HTTP call | Free      | Good     | Medium                | None             |
+| ipinfo.io            | ❌ HTTP call | Free tier | Good     | Medium                | Token            |
+| Cloudflare headers   | ✅           | Free      | Good     | Low (CF-dependent)    | Behind CF        |
 
 **Recommendation: MaxMind GeoLite2**
 
 Rationale:
+
 - Offline-capable — no external API dependency at redirect time (critical for latency + reliability)
 - Free, well-maintained, widely used
 - Local DB file ships in Docker image (updates via cron or rebuild)
@@ -186,11 +193,15 @@ export interface Geolocator {
 }
 
 // infrastructure/maxmind-geolocator.ts
-export class MaxMindGeolocator implements Geolocator { /* real impl */ }
+export class MaxMindGeolocator implements Geolocator {
+  /* real impl */
+}
 
 // tests/dummy-geolocator.ts
 export class DummyGeolocator implements Geolocator {
-  async resolve() { return { country: 'US', city: 'New York' }; }
+  async resolve() {
+    return { country: 'US', city: 'New York' };
+  }
 }
 ```
 
@@ -238,16 +249,16 @@ All responses use standard HTTP status codes. Error responses follow RFC 7807 Pr
 
 ### Endpoints
 
-| Method | Path | Body/Query | Response | Status |
-|--------|------|------------|----------|--------|
-| `POST` | `/api/links` | `{ original_url, slug? }` | `{ id, original_url, slug, short_url, created_at }` | 201 |
-| `GET` | `/api/links` | `?search=&sortBy=created_at&sortDir=desc&page=1&pageSize=20` | `{ data: Link[], total, page, pageSize }` | 200 |
-| `DELETE` | `/api/links/:id` | — | — | 204 |
-| `GET` | `/:slug` | — | 302 redirect to `original_url` | 302 / 404 |
-| `GET` | `/api/analytics/summary` | — | `{ total_links, total_clicks, clicks_today, clicks_7d }` | 200 |
-| `GET` | `/api/analytics` | `?link_id=&date_from=&date_to=&country=&page=1&pageSize=20` | `{ data: Event[], total, page, pageSize }` | 200 |
-| `GET` | `/api/analytics/timeseries` | `?granularity=day\|week\|month&date_from=&date_to=` | `{ data: [{ timestamp, count }] }` | 200 |
-| `GET` | `/health` | — | `{ status: "ok", db: "connected" }` | 200 |
+| Method   | Path                        | Body/Query                                                   | Response                                                 | Status    |
+| -------- | --------------------------- | ------------------------------------------------------------ | -------------------------------------------------------- | --------- |
+| `POST`   | `/api/links`                | `{ original_url, slug? }`                                    | `{ id, original_url, slug, short_url, created_at }`      | 201       |
+| `GET`    | `/api/links`                | `?search=&sortBy=created_at&sortDir=desc&page=1&pageSize=20` | `{ data: Link[], total, page, pageSize }`                | 200       |
+| `DELETE` | `/api/links/:id`            | —                                                            | —                                                        | 204       |
+| `GET`    | `/:slug`                    | —                                                            | 302 redirect to `original_url`                           | 302 / 404 |
+| `GET`    | `/api/analytics/summary`    | —                                                            | `{ total_links, total_clicks, clicks_today, clicks_7d }` | 200       |
+| `GET`    | `/api/analytics`            | `?link_id=&date_from=&date_to=&country=&page=1&pageSize=20`  | `{ data: Event[], total, page, pageSize }`               | 200       |
+| `GET`    | `/api/analytics/timeseries` | `?granularity=day\|week\|month&date_from=&date_to=`          | `{ data: [{ timestamp, count }] }`                       | 200       |
+| `GET`    | `/health`                   | —                                                            | `{ status: "ok", db: "connected" }`                      | 200       |
 
 **Note:** `GET /:slug` is NOT under `/api` — it's the public redirect endpoint.
 
@@ -257,7 +268,10 @@ All responses use standard HTTP status codes. Error responses follow RFC 7807 Pr
 // shared/src/schemas/link.ts
 export const createLinkSchema = z.object({
   original_url: z.string().url(),
-  slug: z.string().regex(/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,60}[a-zA-Z0-9])?$/).optional(),
+  slug: z
+    .string()
+    .regex(/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,60}[a-zA-Z0-9])?$/)
+    .optional(),
 });
 
 export const linkResponseSchema = z.object({
@@ -275,11 +289,11 @@ export const linkResponseSchema = z.object({
 
 **Routes (TanStack Router file-based):**
 
-| Route | Component | Purpose |
-|-------|-----------|---------|
-| `/` | `LinksPage` | Links table + create form |
+| Route        | Component       | Purpose                                |
+| ------------ | --------------- | -------------------------------------- |
+| `/`          | `LinksPage`     | Links table + create form              |
 | `/analytics` | `AnalyticsPage` | KPIs + timeseries chart + events table |
-| `*` | `NotFoundPage` | 404 |
+| `*`          | `NotFoundPage`  | 404                                    |
 
 **Feature structure:**
 
@@ -303,12 +317,12 @@ src/
 
 **Library choices:**
 
-| Concern | Library | Rationale |
-|---------|---------|-----------|
-| Forms | React Hook Form + Zod resolver | Already in stack, integrates with shared Zod schemas |
-| Toasts | **sonner** | Lightweight (~3KB), modern API, beautiful defaults, zero config |
-| Charts | **Recharts** | Most popular React chart library, composable, good docs, fits dashboard needs |
-| HTTP client | Native `fetch` with thin wrapper | No axios dependency for a simple API |
+| Concern     | Library                          | Rationale                                                                     |
+| ----------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| Forms       | React Hook Form + Zod resolver   | Already in stack, integrates with shared Zod schemas                          |
+| Toasts      | **sonner**                       | Lightweight (~3KB), modern API, beautiful defaults, zero config               |
+| Charts      | **Recharts**                     | Most popular React chart library, composable, good docs, fits dashboard needs |
+| HTTP client | Native `fetch` with thin wrapper | No axios dependency for a simple API                                          |
 
 ---
 
@@ -363,10 +377,10 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 
 **Recommendation: Single container serving both API and frontend SPA.**
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **A) Backend serves SPA static files** | One container, simple Dokploy deploy, no CORS, no separate nginx | Backend serves non-API traffic |
-| B) Separate containers + nginx | Clean separation | More complex for a VPS, needs reverse proxy config |
+| Option                                 | Pros                                                             | Cons                                               |
+| -------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------- |
+| **A) Backend serves SPA static files** | One container, simple Dokploy deploy, no CORS, no separate nginx | Backend serves non-API traffic                     |
+| B) Separate containers + nginx         | Clean separation                                                 | More complex for a VPS, needs reverse proxy config |
 
 **Choice: A** — Fastify serves the built frontend as static files. One container, one port, one Dokploy service.
 
@@ -404,7 +418,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    ports: ["3000:3000"]
+    ports: ['3000:3000']
     environment:
       DATABASE_URL: postgres://shortpulse:shortpulse@postgres:5432/shortpulse
       PORT: 3000
@@ -413,7 +427,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
       interval: 30s
       timeout: 5s
       retries: 3
@@ -427,7 +441,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U shortpulse"]
+      test: ['CMD-SHELL', 'pg_isready -U shortpulse']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -440,11 +454,11 @@ volumes:
 
 ## 12. Testing Architecture
 
-| Layer | What to test | Tools | Mocking |
-|-------|-------------|-------|---------|
-| **Unit** | Slug generation, URL validation, slug validation, service logic, Zod schemas | Vitest | Mock repository interfaces |
-| **Integration** | API endpoints (full HTTP cycle), DB operations, redirect + analytics flow | Vitest + Fastify inject + testcontainers | Real PostgreSQL, DummyGeolocator, DummyUA |
-| **E2E** | Create link → redirect → analytics visible, delete link, 404 | Playwright | Full docker-compose stack |
+| Layer           | What to test                                                                 | Tools                                    | Mocking                                   |
+| --------------- | ---------------------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------- |
+| **Unit**        | Slug generation, URL validation, slug validation, service logic, Zod schemas | Vitest                                   | Mock repository interfaces                |
+| **Integration** | API endpoints (full HTTP cycle), DB operations, redirect + analytics flow    | Vitest + Fastify inject + testcontainers | Real PostgreSQL, DummyGeolocator, DummyUA |
+| **E2E**         | Create link → redirect → analytics visible, delete link, 404                 | Playwright                               | Full docker-compose stack                 |
 
 **Geolocation testing:** Inject `DummyGeolocator` that returns fixed `{ country: 'US', city: 'New York' }` in all integration/unit tests. One optional test verifies `MaxMindGeolocator` against the real DB file.
 
@@ -482,21 +496,21 @@ afterAll(async () => {
 
 ## Summary of Recommendations
 
-| Decision | Choice |
-|----------|--------|
-| Monorepo | pnpm workspaces: `packages/{frontend,backend,shared}` |
-| Backend arch | Clean/Hexagonal: domain → application → infrastructure → presentation |
-| DI | Simple container pattern (no library) |
-| Slug gen | `crypto.randomBytes`, 7 chars, 54-char alphabet, retry on collision |
-| Analytics | Synchronous write before 302 redirect |
-| Geolocation | MaxMind GeoLite2 (local DB, offline, testable via interface) |
-| UA parsing | `ua-parser-js`, store raw + parsed browser |
-| Toast | sonner |
-| Charts | Recharts |
-| HTTP client | Native fetch with thin wrapper |
-| DB migrations | Drizzle Kit, run in container entrypoint |
-| Docker | Single container (backend serves SPA), multi-stage build |
-| Testing | Vitest (unit/integration) + Playwright (E2E) + testcontainers |
+| Decision      | Choice                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| Monorepo      | pnpm workspaces: `packages/{frontend,backend,shared}`                 |
+| Backend arch  | Clean/Hexagonal: domain → application → infrastructure → presentation |
+| DI            | Simple container pattern (no library)                                 |
+| Slug gen      | `crypto.randomBytes`, 7 chars, 54-char alphabet, retry on collision   |
+| Analytics     | Synchronous write before 302 redirect                                 |
+| Geolocation   | MaxMind GeoLite2 (local DB, offline, testable via interface)          |
+| UA parsing    | `ua-parser-js`, store raw + parsed browser                            |
+| Toast         | sonner                                                                |
+| Charts        | Recharts                                                              |
+| HTTP client   | Native fetch with thin wrapper                                        |
+| DB migrations | Drizzle Kit, run in container entrypoint                              |
+| Docker        | Single container (backend serves SPA), multi-stage build              |
+| Testing       | Vitest (unit/integration) + Playwright (E2E) + testcontainers         |
 
 ## Risks
 

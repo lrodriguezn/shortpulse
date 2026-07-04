@@ -37,11 +37,13 @@ ShortPulse is a greenfield, **public (no-auth)** URL shortener: anyone can creat
 > Contract for sdd-spec. `openspec/specs/{links,analytics}` already exist (empty); spec phase fills them. `health` is new.
 
 ### New Capabilities
+
 - `links`: link lifecycle — create (custom/auto slug), list, soft-delete, redirect, slug rules (case-insensitive, 3–20, reserved routes), 409 collision semantics.
 - `analytics`: analytics event recording on redirect (geo + UA + referer), summary KPIs, paginated events query, timeseries aggregation; retention after link soft-delete (deleted link rendering).
 - `health`: app + DB healthcheck behavior (200 connected / 503 disconnected).
 
 ### Modified Capabilities
+
 - None. Greenfield.
 
 ## Approach
@@ -50,25 +52,25 @@ Hexagonal backend: pure domain (`Link`, `AnalyticsEvent`, `SlugGenerator`, `Slug
 
 ## Affected Areas
 
-| Area | Impact | Description |
-|------|--------|-------------|
-| `packages/backend` | New | Fastify, hexagonal layers, Drizzle, migrations, container.ts |
-| `packages/frontend` | New | Vite SPA, TanStack Router/Query/Table, RHF, Recharts, sonner |
-| `packages/shared` | New | Zod schemas, types, slug/URL constants |
-| `docker/` | New | Multi-stage Dockerfile, docker-compose.yml |
-| `openspec/specs/{links,analytics,health}` | New | Capability specs (filled by sdd-spec) |
-| `README.md`, `LICENSE` | New | Docs + MIT |
+| Area                                      | Impact | Description                                                  |
+| ----------------------------------------- | ------ | ------------------------------------------------------------ |
+| `packages/backend`                        | New    | Fastify, hexagonal layers, Drizzle, migrations, container.ts |
+| `packages/frontend`                       | New    | Vite SPA, TanStack Router/Query/Table, RHF, Recharts, sonner |
+| `packages/shared`                         | New    | Zod schemas, types, slug/URL constants                       |
+| `docker/`                                 | New    | Multi-stage Dockerfile, docker-compose.yml                   |
+| `openspec/specs/{links,analytics,health}` | New    | Capability specs (filled by sdd-spec)                        |
+| `README.md`, `LICENSE`                    | New    | Docs + MIT                                                   |
 
 ## Risks
 
-| Risk | Likelihood | Mitigation |
-|------|------------|------------|
-| No-auth abuse / spam link creation | Med | Accepted product decision; URL-only validation; revisit rate-limit later |
-| MaxMind GeoLite2 DB staleness | Med | Rebuild image regularly / cron refresh; local DB keeps redirects offline-safe |
-| Sync analytics write latency under DB load | Low–Med | Acceptable at VPS scale; documented exit to async queue if growth demands |
-| Soft-delete query complexity (deleted-link rendering in reports) | Med | Analytics FK retained; queries coalesce name to `"(deleted link)"` via LEFT JOIN |
-| Single-container scaling ceiling | Low | Split to nginx+API later if needed; correct for VPS/Dokploy |
-| Slug collision race (concurrent creates) | Low | DB UNIQUE constraint + retry (auto) / 409 (custom) |
+| Risk                                                             | Likelihood | Mitigation                                                                       |
+| ---------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------- |
+| No-auth abuse / spam link creation                               | Med        | Accepted product decision; URL-only validation; revisit rate-limit later         |
+| MaxMind GeoLite2 DB staleness                                    | Med        | Rebuild image regularly / cron refresh; local DB keeps redirects offline-safe    |
+| Sync analytics write latency under DB load                       | Low–Med    | Acceptable at VPS scale; documented exit to async queue if growth demands        |
+| Soft-delete query complexity (deleted-link rendering in reports) | Med        | Analytics FK retained; queries coalesce name to `"(deleted link)"` via LEFT JOIN |
+| Single-container scaling ceiling                                 | Low        | Split to nginx+API later if needed; correct for VPS/Dokploy                      |
+| Slug collision race (concurrent creates)                         | Low        | DB UNIQUE constraint + retry (auto) / 409 (custom)                               |
 
 ## Rollback Plan
 
