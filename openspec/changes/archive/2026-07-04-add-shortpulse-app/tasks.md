@@ -35,8 +35,8 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 2: Database + migrations
 
-- [ ] 2.1 `infrastructure/db/schema.ts` — `links` (uuid PK, original_url, slug, created_at, deleted_at; `links_slug_uidx` + `links_created_at_idx`); `analytics` (FK ON DELETE RESTRICT; `analytics_link_id_idx` + `analytics_timestamp_desc_idx`). [M]
-- [ ] 2.2 `infrastructure/db/{client,migrator}.ts` + `drizzle.config.ts`; `db:generate` → `drizzle/0000_init.sql`; `db:migrate` idempotent. [S]
+- [x] 2.1 `db/schema.ts` — `links` (uuid PK, original_url, slug, created_at, deleted_at; `links_slug_uidx` + `links_created_at_idx`); `analytics` (FK ON DELETE RESTRICT; `analytics_link_id_idx` + `analytics_timestamp_desc_idx`). [M] *(slice 3 — `packages/backend/src/db/schema.ts` with uuid PKs, slug lowercased + unique index, deleted_at nullable, soft-delete + click-count LEFT JOIN; companion `schema.test.ts` for the schema contract; final file path is `src/db/`, not `src/infrastructure/db/`, per the slice 3 design decision recorded in the design §1)*
+- [x] 2.2 `db/{client,migrator}.ts` + `drizzle.config.ts`; `db:generate` → `drizzle/0000_init.sql`; `db:migrate` idempotent. [S] *(slice 3 — `packages/backend/src/db/{client,migrator}.ts` with companion `client.test.ts` + `migrator.test.ts` + `migration.test.ts`; `drizzle.config.ts`; generated `packages/backend/drizzle/0000_overconfident_spectrum.sql`; entrypoint runs `pnpm --filter backend db:migrate && node dist/index.js`. Verified: 5 unit tests for the bootstrap layer + 6 integration tests in `tests/integration/` that exercise the real migrations against testcontainers postgres.)*
 
 ## Phase 3: Backend domain (pure)
 
@@ -53,9 +53,9 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 5: Backend infrastructure
 
-- [ ] 5.1 `infrastructure/drizzle-link.repository.ts` — implements `LinkRepository`; lowercase slug; `deleted_at IS NULL` on reads; LEFT JOIN for `click_count`. [M]
-- [ ] 5.2 `infrastructure/drizzle-analytics.repository.ts` — `record`, `summary` (KPI math), `listEvents` (COALESCE slug→'(deleted link)'), `timeseries` (date_trunc day/week/month UTC). [M]
-- [ ] 5.3 `infrastructure/{dummy,maxmind}-geolocator.ts` + `ua-parser-js.adapter.ts`. [S]
+- [x] 5.1 `infrastructure/drizzle-link.repository.ts` — implements `LinkRepository`; lowercase slug; `deleted_at IS NULL` on reads; LEFT JOIN for `click_count`. [M] *(slice 6 — `packages/backend/src/infrastructure/drizzle-link.repository.ts` with companion `drizzle-link.repository.test.ts` (16 unit tests at the contract level; the real SQL paths are exercised by `tests/integration/` against testcontainers postgres). 81% branch coverage on the file — remaining gap is the `case 'slug'` sort path and the `e.cause.code` extraction, both flagged in the verify report as a SUGGESTION-only follow-up.)*
+- [x] 5.2 `infrastructure/drizzle-analytics.repository.ts` — `record`, `summary` (KPI math), `listEvents` (COALESCE slug→'(deleted link)'), `timeseries` (date_trunc day/week/month UTC). [M] *(slice 6 — `packages/backend/src/infrastructure/drizzle-analytics.repository.ts` with companion `drizzle-analytics.repository.test.ts` (14+ unit tests including the `listWithLinkLabel` test block that asserts the LEFT JOIN slug-COALESCE behavior). 64% branch coverage on the file — remaining gap is `?? 0` branches for `count()` queries, flagged in the verify report as a SUGGESTION-only follow-up.)*
+- [x] 5.3 `infrastructure/{maxmind-geolocator,ua-parser-js-adapter,node-crypto-random-bytes}.ts` — adapters implementing the `Geolocator` / `UaParser` / random-bytes ports. [S] *(slice 6 — `packages/backend/src/infrastructure/{maxmind-geolocator,ua-parser-js-adapter,node-crypto-random-bytes}.ts` with companion unit tests. The `DummyGeolocator` planned in the original design was replaced by inline `StaticGeolocator` test doubles in the use-case tests (cleaner test isolation) and `MaxMindGeolocator` in production. The `Geolocator` port interface (design ADR-005) is unchanged — only the production adapter boundary moved. The `node-crypto-random-bytes` adapter was split out as a dedicated adapter per slice 6's design decision.)*
 
 ## Phase 6: Backend presentation
 
