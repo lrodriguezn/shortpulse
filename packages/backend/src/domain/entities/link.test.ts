@@ -235,6 +235,20 @@ describe('Link#softDelete', () => {
     expect(deleted.slug).toBe(link.slug);
     expect(deleted.createdAt).toBe(link.createdAt);
   });
+
+  it('throws when given an invalid Date (e.g. NaN-time)', () => {
+    // The `Number.isNaN(deletedAt.getTime())` branch — the factory
+    // does its own validation, but softDelete is a back-door
+    // (e.g. from `new Date('not-a-date')`) and must guard too.
+    const link = createLink({
+      id: VALID_ID,
+      originalUrl: VALID_URL,
+      slug: VALID_SLUG,
+      createdAt: FIXED_DATE,
+    });
+    const invalid = new Date('not-a-date');
+    expect(() => link.softDelete(invalid)).toThrow(/valid Date/);
+  });
 });
 
 describe('Link#shortUrl', () => {
@@ -268,6 +282,20 @@ describe('Link#shortUrl', () => {
       createdAt: FIXED_DATE,
     });
     expect(link.shortUrl('http://localhost:3000')).toBe('http://localhost:3000/abc2345');
+  });
+
+  it('throws when baseUrl is not a non-empty string', () => {
+    // The `typeof baseUrl !== 'string' || baseUrl.length === 0`
+    // branch — the shortUrl helper is the only public surface that
+    // composes the public URL, and it must fail loud rather than
+    // emit "undefined/<slug>" or "/<slug>".
+    const link = createLink({
+      id: VALID_ID,
+      originalUrl: VALID_URL,
+      slug: VALID_SLUG,
+      createdAt: FIXED_DATE,
+    });
+    expect(() => link.shortUrl('')).toThrow(/non-empty string/);
   });
 });
 

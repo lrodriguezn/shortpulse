@@ -64,4 +64,41 @@ describe('ErrorBoundary', () => {
 
     spy.mockRestore();
   });
+
+  it('renders a custom fallback when one is provided', () => {
+    // The `fallback` prop receives the caught error + the retry
+    // handler. Custom fallbacks let the host route tailor the
+    // recovery UX (e.g. "Reload dashboard" instead of "Reintentar").
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const fallback = vi.fn((_error: Error, retry: () => void) => (
+      <div>
+        <p>Custom fallback</p>
+        <button type="button" onClick={retry}>
+          Reload dashboard
+        </button>
+      </div>
+    ));
+
+    render(
+      <ErrorBoundary fallback={fallback}>
+        <Boom />
+      </ErrorBoundary>,
+    );
+
+    // The default copy ("Algo salió mal") is NOT rendered.
+    expect(screen.queryByText(/algo salió mal/i)).not.toBeInTheDocument();
+    // The custom copy IS rendered.
+    expect(screen.getByText(/custom fallback/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reload dashboard/i })).toBeInTheDocument();
+    // The fallback received the thrown error. In StrictMode the
+    // boundary may invoke the fallback more than once across the
+    // double-invoke cycle; we just need to assert the call happened
+    // and the error is the right one.
+    expect(fallback.mock.calls.length).toBeGreaterThanOrEqual(1);
+    const [errorArg] = fallback.mock.calls[0]!;
+    expect(errorArg).toBeInstanceOf(Error);
+    expect((errorArg as Error).message).toBe('boom');
+
+    spy.mockRestore();
+  });
 });

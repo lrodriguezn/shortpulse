@@ -32,7 +32,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import type { LinkResponse } from '@shortpulse/shared';
-import type { PagedResponse } from '../../lib/api.js';
+import { ApiError, type PagedResponse } from '../../lib/api.js';
 
 // --- Hoisted mocks ----------------------------------------------------------
 
@@ -73,7 +73,7 @@ vi.mock('sonner', () => ({
   }),
 }));
 
-import { LinksTable } from './links-table.js';
+import { LinksTable, formatCreatedAt } from './links-table.js';
 
 const ORIGINAL_FETCH = globalThis.fetch;
 
@@ -320,5 +320,127 @@ describe('LinksTable \u2014 sort', () => {
     // Click again → descending.
     await user.click(sortButton);
     expect(clicksHeader).toHaveAttribute('aria-sort', 'descending');
+  });
+});
+
+describe('LinksTable — copy / delete error paths', () => {
+  it('toasts an error when the clipboard copy returns false', async () => {
+    useLinksState.data = buildPaged([
+      buildRow({ slug: 'docs', short_url: 'http://api.test/docs' }),
+    ]);
+    // The hook returns `false` for the copy (e.g. permission denied).
+    copyState.copy.mockResolvedValue(false);
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<LinksTable />, { wrapper: makeWrapper(qc) });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /copiar/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('No se pudo copiar'));
+  });
+
+  it('toasts the ApiError detail on delete failure', async () => {
+    useLinksState.data = buildPaged([buildRow({ id: '00000000-0000-0000-0000-000000000099' })]);
+    useDeleteLinkState.mutateAsync.mockRejectedValue(
+      new ApiError(404, 'El enlace no existe', 'El enlace no existe'),
+    );
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<LinksTable />, { wrapper: makeWrapper(qc) });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /eliminar/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('El enlace no existe'));
+  });
+
+  it('toasts a generic message on a non-ApiError delete failure', async () => {
+    useLinksState.data = buildPaged([buildRow()]);
+    useDeleteLinkState.mutateAsync.mockRejectedValue(new Error('Network down'));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<LinksTable />, { wrapper: makeWrapper(qc) });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /eliminar/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('No se pudo eliminar el enlace'));
+  });
+});
+
+describe('LinksTable — error fallback', () => {
+  it('falls back to a generic Spanish message when the error has no message', () => {
+    useLinksState.isError = true;
+    useLinksState.error = null;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<LinksTable />, { wrapper: makeWrapper(qc) });
+
+    expect(screen.getByText(/error desconocido/i)).toBeInTheDocument();
+  });
+});
+
+describe('formatCreatedAt', () => {
+  it('returns the raw input when the date is unparseable', () => {
+    // The defensive `Number.isNaN(date.getTime())` branch keeps
+    // the table from rendering "Invalid Date".
+    expect(formatCreatedAt('not-a-date')).toBe('not-a-date');
+  });
+
+  it('formats valid dates with the locale-aware short format', () => {
+    const out = formatCreatedAt('2026-07-04T00:00:00.000Z');
+    expect(out).toMatch(/2026/);
+    expect(out).toMatch(/jul/);
+  });
+});
+
+describe('LinksTable — created_at raw fallback', () => {
+  it('renders the raw ISO string when the created_at is unparseable', () => {
+    // The `Number.isNaN(date.getTime())` branch in the `Creado`
+    // column — the BE should always send ISO, but the FE must
+    // degrade gracefully on a malformed payload.
+    useLinksState.data = buildPaged([buildRow({ created_at: 'not-a-date' })]);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<LinksTable />, { wrapper: makeWrapper(qc) });
+
+    expect(screen.getByText('not-a-date')).toBeInTheDocument();
+  });
+});
+
+describe('LinksTable — delete error: missing detail', () => {
+  it('falls back to the ApiError message when the error has no detail', async () => {
+    // The `err.detail ?? err.message` false branch — an ApiError
+    // with an undefined `detail` must still surface the message
+    // in the toast.
+    useLinksState.data = buildPaged([buildRow()]);
+    useDeleteLinkState.mutateAsync.mockRejectedValue(
+      new ApiError(500, 'Internal server error', undefined),
+    );
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<LinksTable />, { wrapper: makeWrapper(qc) });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /eliminar/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Internal server error'));
+  });
+});
+
+describe('LinksTable — non-sortable column', () => {
+  it('renders the Acciones column without a sort button (non-sortable)', () => {
+    // The `else { flexRender(...) }` branch — the `Acciones` column
+    // has no `accessor`, so it's NOT sortable. The <th> renders the
+    // header text directly (no inner button).
+    useLinksState.data = buildPaged([buildRow()]);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<LinksTable />, { wrapper: makeWrapper(qc) });
+
+    const accionesHeader = screen.getByRole('columnheader', { name: /acciones/i });
+    // No sort button inside the non-sortable column.
+    expect(within(accionesHeader).queryByRole('button')).not.toBeInTheDocument();
   });
 });

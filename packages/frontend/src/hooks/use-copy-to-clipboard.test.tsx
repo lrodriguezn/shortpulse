@@ -97,6 +97,48 @@ describe('useCopyToClipboard', () => {
     // setTimeout callback is committed synchronously inside `act`.
     expect(result.current.copied).toBe(false);
   });
+
+  it('cancels a pending reset when copy is called again before the reset fires', async () => {
+    // The `timerRef.current !== null` branch — a second copy while
+    // the reset timer is pending must clear the previous timer so
+    // the copied state doesn't flicker.
+    vi.useFakeTimers();
+    const writeText = vi.fn(async () => undefined);
+    (navigator.clipboard as { writeText: typeof navigator.clipboard.writeText }).writeText =
+      writeText;
+
+    const { result } = renderHook(() => useCopyToClipboard({ resetMs: 1000 }));
+    await act(async () => {
+      await result.current.copy('a');
+    });
+    expect(result.current.copied).toBe(true);
+
+    // Advance to 500ms (well before the 1000ms reset).
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(result.current.copied).toBe(true);
+
+    // Copy again — this MUST clear the pending timer and reset
+    // the 1000ms countdown.
+    await act(async () => {
+      await result.current.copy('b');
+    });
+    expect(result.current.copied).toBe(true);
+
+    // Advance to 500ms (would have triggered the FIRST timer had
+    // it not been cleared). The copied state should still be true.
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(result.current.copied).toBe(true);
+
+    // Advance another 500ms — the SECOND timer fires, copied flips to false.
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(result.current.copied).toBe(false);
+  });
 });
 
 describe('useCopyToClipboard (no clipboard API)', () => {

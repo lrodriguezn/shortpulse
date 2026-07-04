@@ -211,4 +211,89 @@ describe('error handling', () => {
       createLink({ original_url: 'https://example.com', slug: 'taken' }),
     ).rejects.toBeInstanceOf(ApiError);
   });
+
+  it('falls back to the problem title when no detail is present', async () => {
+    const fetchMock = mockFetchOnce(
+      { type: 'about:blank', title: 'Server down', status: 500 },
+      { status: 500 },
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(health()).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 500,
+      message: 'Server down',
+    });
+  });
+
+  it('falls back to "HTTP <status>" when the body is not JSON-parseable', async () => {
+    // The `safeReadProblem` catch branch — the BE returns 5xx with
+    // a non-JSON body (e.g. an upstream proxy error page). The
+    // client must still surface a useful message.
+    const fetchMock = vi.fn<typeof fetch>(async () => {
+      // The Response body for the `await res.json()` call must
+      // throw — the `safeReadProblem` swallows the throw and
+      // returns `{}`, which falls through to the `HTTP ${status}`
+      // message.
+      return new Response('not json at all', { status: 502 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(health()).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 502,
+      message: 'HTTP 502',
+    });
+  });
+});
+
+describe('api base URL resolution', () => {
+  it('falls back to "http://localhost" when the configured base is empty (node env)', async () => {
+    // The `base || fallback` branch — a misconfigured empty base
+    // must still produce a valid URL. In node (no `window`) the
+    // fallback is `'http://localhost'`; in jsdom the origin would
+    // be used instead.
+    setApiBaseUrl('');
+    const fetchMock = mockFetchOnce({ status: 'ok', db: 'connected' });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await health();
+    const [url] = fetchMock.mock.calls[0]!;
+    // The URL is built from the fallback + '/health'.
+    expect(url).toMatch(/^http:\/\/localhost\/health$/);
+  });
+});
+
+describe('api signal plumbing', () => {
+  it('forwards an AbortSignal to fetch when one is provided', async () => {
+    const fetchMock = mockFetchOnce(null, { status: 204 });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const ac = new AbortController();
+    await deleteLink('00000000-0000-0000-0000-000000000099', ac.signal);
+    const [, init] = fetchMock.mock.calls[0]!;
+    expect(init?.signal).toBe(ac.signal);
+  });
+});
+
+describe('api querystring null/undefined skipping', () => {
+  it('omits null and undefined values from the querystring', async () => {
+    // The `v === null || v === undefined` branch — callers can
+    // pass optional fields without polluting the URL with `key=`.
+    const fetchMock = mockFetchOnce({ data: [], total: 0, page: 1, page_size: 20 });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await listAnalytics({
+      country: null,
+      page: 1,
+      page_size: 10,
+    } as unknown as Parameters<typeof listAnalytics>[0]);
+    const [url] = fetchMock.mock.calls[0]!;
+    expect(url).toContain('page=1');
+    expect(url).toContain('page_size=10');
+    // `country=null` is dropped by `URLSearchParams.set` (it
+    // stringifies to 'null' but our `null` short-circuit prevents
+    // the call from happening).
+    expect(url).not.toContain('country=null');
+  });
 });

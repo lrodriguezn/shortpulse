@@ -70,6 +70,18 @@ describe('createSlug', () => {
   });
 
   describe('failure cases', () => {
+    it('rejects a non-string input with the "format" reason', () => {
+      // The `typeof input !== 'string'` branch — the public API is
+      // typed as `string` but the runtime guard exists for callers
+      // coming from `unknown` (e.g. a parsed JSON body).
+      const result = createSlug(42 as unknown as string);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.reason).toBe('format');
+        expect(result.message).toMatch(/must be a string/i);
+      }
+    });
+
     it('returns { success: false, reason: "length" } for too-short slugs', () => {
       const cases = ['', 'a', 'ab'];
       for (const c of cases) {

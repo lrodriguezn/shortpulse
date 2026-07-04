@@ -29,6 +29,8 @@ import userEvent from '@testing-library/user-event';
 import type { ReactElement, ReactNode } from 'react';
 import type { TimeseriesResponse, TimeseriesRow } from '@shortpulse/shared';
 
+import { formatBucket } from './timeseries-chart.js';
+
 // --- Recharts mock ----------------------------------------------------------
 // Capture the props + children recharts receives so the test
 // can assert on the chart's data contract without depending
@@ -171,6 +173,46 @@ describe('TimeseriesChart — loading / error states', () => {
     await user.click(retry);
     expect(useTimeseriesState.refetch).toHaveBeenCalledTimes(1);
   });
+
+  it('falls back to a generic Spanish message when the error has no message', () => {
+    // Edge case: a query that failed without an `Error` attached
+    // (e.g. a network failure that lost the message). The fallback
+    // `Error desconocido` keeps the alert useful.
+    useTimeseriesState.isError = true;
+    useTimeseriesState.error = null;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
+
+    expect(screen.getByText(/error desconocido/i)).toBeInTheDocument();
+  });
+});
+
+describe('formatBucket', () => {
+  it('returns the raw input when the date is unparseable', () => {
+    // The defensive `Number.isNaN(d.getTime())` branch keeps the
+    // chart from rendering "Invalid Date" if the BE ever ships a
+    // malformed bucket.
+    expect(formatBucket('not-a-date', 'day')).toBe('not-a-date');
+  });
+
+  it('formats day buckets as "short-month day"', () => {
+    // Exact format is locale-dependent; contract is "non-empty, contains the day".
+    const out = formatBucket('2026-07-04T00:00:00.000Z', 'day');
+    expect(out).toMatch(/jul/);
+    expect(out).toMatch(/4/);
+  });
+
+  it('formats week buckets as "short-month day"', () => {
+    const out = formatBucket('2026-07-04T00:00:00.000Z', 'week');
+    expect(out).toMatch(/jul/);
+  });
+
+  it('formats month buckets as "year short-month"', () => {
+    // The month branch includes the year for clarity on year-boundary ticks.
+    const out = formatBucket('2026-07-04T00:00:00.000Z', 'month');
+    expect(out).toMatch(/2026/);
+    expect(out).toMatch(/jul/);
+  });
 });
 
 describe('TimeseriesChart — chart render', () => {
@@ -274,6 +316,53 @@ describe('TimeseriesChart — granularity selector', () => {
     const options = within(selector as HTMLElement).getAllByRole('option');
     const labels = options.map((o) => (o as HTMLOptionElement).textContent);
     expect(labels).toEqual(['Día', 'Semana', 'Mes']);
+  });
+
+  it('renders the heading with the day/week/month suffix matching the selected granularity', () => {
+    // The "Clicks por …" heading reflects the chosen granularity.
+    // The week / month / fallback branches in the ternary each
+    // need a click to flip the selector, then we re-query the
+    // heading text.
+    useTimeseriesState.data = { data: [buildBucket()] };
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
+
+    expect(screen.getByRole('heading', { name: /clicks por día/i })).toBeInTheDocument();
+
+    // Re-render with `week` — the heading flips.
+    useTimeseriesState.data = { data: [buildBucket()] };
+    rerender(<TimeseriesChart />);
+    // jsdom's selector is uncontrolled; trigger a real change so
+    // the component picks the new granularity label.
+    const setNativeValue = (el: Element, value: string) => {
+      const proto = Object.getPrototypeOf(el) as object;
+      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+      setter?.call(el, value);
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const selector = screen.getByRole('combobox', { name: /granularidad/i });
+    setNativeValue(selector, 'week');
+    expect(screen.getByRole('heading', { name: /clicks por semana/i })).toBeInTheDocument();
+
+    setNativeValue(selector, 'month');
+    expect(screen.getByRole('heading', { name: /clicks por mes/i })).toBeInTheDocument();
+  });
+
+  it('renders the chart with an empty data array when query.data is undefined', () => {
+    // The `query.data?.data ?? []` fallback: when isError is false
+    // and isPending is false but data is still undefined (race),
+    // the chart must render with an empty array rather than crash.
+    useTimeseriesState.isPending = false;
+    useTimeseriesState.isError = false;
+    useTimeseriesState.data = undefined;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
+
+    // The chart is rendered with an empty array.
+    const chart = screen.getByTestId('recharts-line-chart');
+    expect(chart).toBeInTheDocument();
+    const rows = JSON.parse(chart.getAttribute('data-rows') ?? '[]');
+    expect(rows).toEqual([]);
   });
 });
 

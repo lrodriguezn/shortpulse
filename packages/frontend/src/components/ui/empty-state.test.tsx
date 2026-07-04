@@ -32,4 +32,16 @@ describe('EmptyState', () => {
     );
     expect(screen.getByRole('button', { name: /reset filters/i })).toBeInTheDocument();
   });
+
+  it('renders with only the title (no description, no action)', () => {
+    // The null branches for `description` and `action` must render
+    // without crashing (the spec only requires the title).
+    render(<EmptyState title={'Sin descripción'} />);
+
+    expect(screen.getByRole('heading', { name: /sin descripción/i })).toBeInTheDocument();
+    // The description <p> and the action <div> wrappers are NOT
+    // rendered when the props are absent — the container still has
+    // the title section.
+    expect(screen.queryByRole('paragraph')).not.toBeInTheDocument();
+  });
 });

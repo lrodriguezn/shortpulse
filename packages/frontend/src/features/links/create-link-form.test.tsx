@@ -229,10 +229,63 @@ describe('CreateLinkForm', () => {
     await user.click(screen.getByRole('button', { name: /crear enlace/i }));
 
     await waitFor(() => expect(useCreateLinkState.mutateAsync).toHaveBeenCalledTimes(1));
-    // `slug` is either absent or undefined \u2014 not the empty string,
+    // `slug` is either absent or undefined — not the empty string,
     // which would fail the BE's optional regex.
     const payload = useCreateLinkState.mutateAsync.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload.original_url).toBe('https://example.com');
     expect(payload.slug === undefined || payload.slug === '').toBe(true);
+  });
+
+  it('toasts the BE detail on a 400 validation failure', async () => {
+    const user = userEvent.setup();
+    useCreateLinkState.mutateAsync.mockRejectedValue(
+      new ApiError(
+        400,
+        'La URL debe ser http o https válida',
+        'La URL debe ser http o https válida',
+      ),
+    );
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<CreateLinkForm />, { wrapper: makeWrapper(qc) });
+
+    await user.type(screen.getByLabelText(/url original/i), 'https://example.com');
+    await user.click(screen.getByRole('button', { name: /crear enlace/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(toastError).toHaveBeenCalledWith('La URL debe ser http o https válida');
+  });
+
+  it('toasts the ApiError message when the 409 detail is missing', async () => {
+    // Edge case: a 409 without `detail` (the BE always sends it in
+    // production, but the FE must still toast something useful).
+    const user = userEvent.setup();
+    useCreateLinkState.mutateAsync.mockRejectedValue(
+      new ApiError(409, 'Slug already exists', undefined),
+    );
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<CreateLinkForm />, { wrapper: makeWrapper(qc) });
+
+    await user.type(screen.getByLabelText(/url original/i), 'https://example.com');
+    await user.click(screen.getByRole('button', { name: /crear enlace/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    // The toast uses `err.message` because `err.detail` is undefined.
+    expect(toastError).toHaveBeenCalledWith('Slug already exists');
+  });
+
+  it('toasts a generic message on a non-ApiError (e.g. network) failure', async () => {
+    const user = userEvent.setup();
+    useCreateLinkState.mutateAsync.mockRejectedValue(new Error('Network down'));
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<CreateLinkForm />, { wrapper: makeWrapper(qc) });
+
+    await user.type(screen.getByLabelText(/url original/i), 'https://example.com');
+    await user.click(screen.getByRole('button', { name: /crear enlace/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(toastError).toHaveBeenCalledWith('No se pudo crear el enlace');
   });
 });

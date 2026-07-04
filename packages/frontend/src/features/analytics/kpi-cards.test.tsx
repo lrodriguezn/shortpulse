@@ -38,7 +38,7 @@ vi.mock('../../hooks/use-analytics.js', () => ({
   useAnalyticsSummary: () => useAnalyticsSummaryState,
 }));
 
-import { KpiCards } from './kpi-cards.js';
+import { formatKpiValue, KpiCards } from './kpi-cards.js';
 
 function makeWrapper(queryClient: QueryClient) {
   return ({ children }: { children: ReactNode }) => (
@@ -156,5 +156,40 @@ describe('KpiCards — error state', () => {
     const user = userEvent.setup();
     await user.click(retry);
     expect(useAnalyticsSummaryState.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to a generic Spanish message when the error has no message', () => {
+    // Edge case: query failed without a `Error` attached.
+    useAnalyticsSummaryState.isError = true;
+    useAnalyticsSummaryState.error = null;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<KpiCards />, { wrapper: makeWrapper(qc) });
+
+    expect(screen.getByText(/error desconocido/i)).toBeInTheDocument();
+  });
+});
+
+describe('formatKpiValue', () => {
+  it('formats zero as "0"', () => {
+    expect(formatKpiValue(0)).toBe('0');
+  });
+
+  it('formats positive integers with the locale thousands separator', () => {
+    // The exact separator depends on the runtime ICU build; we
+    // accept any non-empty string containing the digits.
+    expect(formatKpiValue(1234567)).toMatch(/1[\D\s]?234[\D\s]?567/);
+  });
+
+  it('returns "NaN" for non-finite values', () => {
+    // The `!Number.isFinite(n)` branch — defensive against
+    // accidentally handing `NaN` / `Infinity` to `toLocaleString`.
+    expect(formatKpiValue(Number.NaN)).toBe('NaN');
+  });
+
+  it('returns the stringified value for negatives (defensive)', () => {
+    // The `n < 0` branch — KPIs are never negative in production,
+    // but the formatter must not produce a misleading "-1,234" with
+    // a thousands separator.
+    expect(formatKpiValue(-5)).toBe('-5');
   });
 });

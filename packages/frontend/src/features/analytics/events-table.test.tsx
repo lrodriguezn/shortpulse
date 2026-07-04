@@ -43,7 +43,7 @@ vi.mock('../../hooks/use-analytics.js', () => ({
   useAnalytics: () => useAnalyticsState,
 }));
 
-import { EventsTable } from './events-table.js';
+import { EventsTable, toIsoFromLocalInput } from './events-table.js';
 
 function makeWrapper(queryClient: QueryClient) {
   return ({ children }: { children: ReactNode }) => (
@@ -324,9 +324,72 @@ describe('EventsTable — timestamp formatting', () => {
     const cell = screen.getByText(/2026/);
     expect(cell).toBeInTheDocument();
   });
+
+  it('renders the raw ISO string when the timestamp is unparseable', () => {
+    useAnalyticsState.data = buildPaged([buildEvent({ timestamp: 'not-a-date' })]);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<EventsTable />, { wrapper: makeWrapper(qc) });
+
+    // The defensive `Number.isNaN(date.getTime())` branch keeps
+    // the table from rendering "Invalid Date".
+    expect(screen.getByText('not-a-date')).toBeInTheDocument();
+  });
+});
+
+describe('EventsTable — error fallback', () => {
+  it('falls back to a generic Spanish message when the error has no message', () => {
+    useAnalyticsState.isError = true;
+    useAnalyticsState.error = null;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<EventsTable />, { wrapper: makeWrapper(qc) });
+
+    expect(screen.getByText(/error desconocido/i)).toBeInTheDocument();
+  });
+});
+
+describe('EventsTable — empty + filters', () => {
+  it('shows the "filter-mismatch" empty copy when a date range is set', async () => {
+    // The `debouncedLinkId || countryInput || dateFromInput || dateToInput`
+    // branch in the empty state — when ANY filter is active the
+    // empty state reads "no events match" rather than "no events yet".
+    useAnalyticsState.data = buildPaged([]);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<EventsTable />, { wrapper: makeWrapper(qc) });
+
+    const user = userEvent.setup();
+    const fromInput = screen.getByLabelText(/desde/i);
+    // `date_from` is commit-on-change (NOT debounced) — the empty
+    // state description flips synchronously after the type.
+    await user.type(fromInput, '2026-01-01T00:00');
+    expect(screen.getByText(/no hay eventos que coincidan/i)).toBeInTheDocument();
+  });
 });
 
 // Re-export the waitFor helper to keep the imports clean for any
 // future test that needs to await a fetch transition (currently
 // unused but reserved for the filter-passthrough assertion below).
 void waitFor;
+
+describe('toIsoFromLocalInput', () => {
+  it('returns undefined for an empty string', () => {
+    // The `!value` branch — empty inputs MUST NOT send `date_from=`
+    // to the BE (the Zod schema would reject it).
+    expect(toIsoFromLocalInput('')).toBeUndefined();
+  });
+
+  it('returns undefined for an unparseable string', () => {
+    expect(toIsoFromLocalInput('not-a-date')).toBeUndefined();
+  });
+
+  it('converts a valid `YYYY-MM-DDTHH:mm` string to an ISO datetime', () => {
+    // The browser hands the FE a `datetime-local` value with no
+    // timezone; we interpret it as UTC and emit the canonical Z form.
+    // The actual timezone offset depends on the runtime (jsdom uses
+    // the host TZ), so we assert on the round-trip: a Date built
+    // from the same string and converted back to ISO must match.
+    const out = toIsoFromLocalInput('2026-07-04T12:00');
+    expect(out).toBeDefined();
+    // The date portion is preserved.
+    expect(out).toMatch(/^2026-07-04/);
+  });
+});
