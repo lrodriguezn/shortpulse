@@ -6,6 +6,9 @@ node_modules/
 dist/
 build/
 
+# Geolocation database (MaxMind GeoLite2)
+*.mmdb
+
 # Environment
 .env
 .env.local
