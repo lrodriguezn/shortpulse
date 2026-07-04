@@ -95,8 +95,8 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 12: Docs + design cleanup
 
-- [ ] 12.1 `README.md` — description, stack, install, Docker, env vars, architecture, tests, Dokploy; `LICENSE` (MIT); GitHub repo init. [M]
-- [ ] 12.2 `design.md` §8 line 462 entropy `1.42×10¹²` → `≈1.3×10¹²`; §FIX 1 line 655 alphabet remove extra `i` to match 54-char §8. [S]
+- [x] 12.1 `README.md` — description, stack, install, Docker, env vars, architecture, tests, Dokploy; `LICENSE` (MIT); GitHub repo init. [M] *(slice 13 WU1+WU2 — `README.md` (414 lines) covers description, tech stack table, quick path, local install steps, Docker execution with healthcheck + volume guidance, Dokploy One-Service deployment walkthrough, project structure tree, test execution table, env vars table, hexagonal architecture diagram, API quick reference, screenshots placeholder; `LICENSE` (MIT, 21 lines, copyright 2026 "ShortPulse contributors"))*
+- [x] 12.2 `design.md` §8 line 462 entropy `1.42×10¹²` → `≈1.3×10¹²`; §FIX 1 line 655 alphabet remove extra `i` to match 54-char §8. [S] *(slice 13 WU3 — entropy in §8 table corrected to `54^7 ≈ 1.34 × 10¹²` (exact 1,338,925,209,984); §FIX 1 alphabet corrected to remove the extra `i` so it matches the 54-char §8 string `ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789` (23+23+8=54); entropy statement inside §FIX 1 also updated to match)*
 
 ## Order & Parallelization
 
