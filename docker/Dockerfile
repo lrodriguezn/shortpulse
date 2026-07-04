@@ -12,13 +12,13 @@
 #   prod-deps  — install only the production dependency tree
 #                (drops devDependencies like vitest, testcontainers,
 #                drizzle-kit). Smaller `node_modules` → smaller image.
-#   runtime    — `node:20-slim` final image. Carries the compiled
+#   runtime    — `node:22-slim` final image. Carries the compiled
 #                `dist/` folders, the production `node_modules`,
 #                the Drizzle migrations, and the entrypoint script.
 #                ~150 MB on disk.
 #
-# Healthcheck: `node:20-slim` ships neither `wget` nor `curl`, so the
-# HEALTHCHECK uses Node 20's global `fetch` directly — no
+# Healthcheck: `node:22-slim` ships neither `wget` nor `curl`, so the
+# HEALTHCHECK uses Node's global `fetch` directly — no
 # `apt-get install`, no extra layers. See design §11 (Docker) +
 # fix #4 from the design gate review.
 #
@@ -35,7 +35,7 @@ ARG PNPM_VERSION=11.9.0
 # =============================================================================
 # Stage 1: deps — populate the offline pnpm store from the lockfile
 # =============================================================================
-FROM node:20-slim AS deps
+FROM node:22-slim AS deps
 
 WORKDIR /app
 
@@ -106,7 +106,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # =============================================================================
 # Stage 4: runtime — the final production image
 # =============================================================================
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 
 WORKDIR /app
 
@@ -117,7 +117,7 @@ ENV PORT=3000
 # copies the frontend `dist/` to exactly this path.
 ENV FRONTEND_DIST_PATH=/app/packages/frontend/dist
 
-# Healthcheck: Node 20's global `fetch` (no `wget` / `curl` needed).
+# Healthcheck: Node's global `fetch` (no `wget` / `curl` needed).
 # Probes `/health` — returns 200 when DB is reachable, 503 otherwise
 # (see health-route.ts). The `--start-period=10s` gives the app time
 # to boot and run migrations on first start.
