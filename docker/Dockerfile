@@ -70,6 +70,7 @@ WORKDIR /app
 # pnpm will resolve workspace links (@shortpulse/shared from the
 # backend, @shortpulse/shared from the frontend) from the local
 # packages — no registry round-trip.
+COPY tsconfig.base.json tsconfig.json ./
 COPY packages/shared/  ./packages/shared/
 COPY packages/backend/ ./packages/backend/
 COPY packages/frontend/ ./packages/frontend/
