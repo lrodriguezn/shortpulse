@@ -78,9 +78,9 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 ## Phase 9: Frontend Analytics feature
 
-- [ ] 9.1 `features/analytics/api/analytics-api.ts` + 3 hooks (summary/events/timeseries). [M]
-- [ ] 9.2 `components/{kpi-cards,events-table}.tsx` (TanStack Table w/ filters). [M]
-- [ ] 9.3 `components/timeseries-chart.tsx` (Recharts LineChart; granularity switcher) + `routes/analytics.tsx`. [M]
+- [x] 9.1 `features/analytics/api/analytics-api.ts` + 3 hooks (summary/events/timeseries). [M] *(slice 8 WU4 + slice 10 WU1–WU3 — the FE keeps one `lib/api.ts` for all endpoints rather than per-feature `api/` sub-folders; the 3 analytics hooks live in `packages/frontend/src/hooks/use-analytics.ts` (useAnalyticsSummary, useAnalytics, useTimeseries) and were delivered in slice 8 WU4. Slice 10's WU1–WU3 components consume them directly.)*
+- [x] 9.2 `components/{kpi-cards,events-table}.tsx` (TanStack Table w/ filters). [M] *(slice 10 WU1 + WU2 — `features/analytics/kpi-cards.tsx` (4 spec-locked KPI cards: Total Links, Total Clicks, Clicks Today, Clicks Last 7 Days) and `features/analytics/events-table.tsx` (TanStack Table with the 7 spec-locked columns, link/date-range/country filters, debounced link+country inputs, datetime-local date pickers, server-side pagination, and the spec-locked `"(deleted link)"` rendering for soft-deleted-link events). Both components own their loading/empty/error states.)*
+- [x] 9.3 `components/timeseries-chart.tsx` (Recharts LineChart; granularity switcher) + `routes/analytics.tsx`. [M] *(slice 10 WU3 + WU4 — `features/analytics/timeseries-chart.tsx` (Recharts `LineChart` + `ResponsiveContainer` with a day/week/month `<select>` granularity switcher; tests mock the recharts surface to assert the data contract in jsdom) and `features/analytics/analytics-page.tsx` composing KPIs + chart + table in the spec-locked order. `routes/analytics.tsx` is now a one-liner re-export of `AnalyticsPage`, replacing the Phase 7 placeholder.)*
 
 ## Phase 10: Docker
 
