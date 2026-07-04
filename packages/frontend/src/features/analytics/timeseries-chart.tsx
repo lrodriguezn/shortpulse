@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -79,29 +79,33 @@ export function TimeseriesChart(): React.JSX.Element {
   return (
     <section
       aria-labelledby="timeseries-title"
-      className="flex flex-col gap-4 rounded-lg border border-sp-border bg-sp-surface p-4 shadow-sm"
+      className="flex flex-col gap-4 rounded-xl border border-sp-border bg-sp-surface p-4 shadow-sm"
     >
       <header className="flex items-center justify-between gap-3">
         <h2 id="timeseries-title" className="text-base font-semibold text-sp-fg">
           Clicks por {granularity === 'day' ? 'día' : granularity === 'week' ? 'semana' : 'mes'}
         </h2>
-        <label className="flex items-center gap-2 text-sm text-sp-fg-dim">
-          <span>Granularidad</span>
-          <select
-            aria-label="Granularidad"
-            value={granularity}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-              setGranularity(e.target.value as TimeseriesGranularity)
-            }
-            className="h-9 rounded-md border border-sp-border bg-sp-bg px-2 text-sm text-sp-fg shadow-sm focus:border-sp-accent focus:outline-none focus:ring-2 focus:ring-sp-accent-subtle"
-          >
-            {GRANULARITY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div
+          className="flex rounded-md bg-sp-bg-m1 p-0.5"
+          role="radiogroup"
+          aria-label="Granularidad"
+        >
+          {GRANULARITY_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              role="radio"
+              aria-checked={granularity === opt.value}
+              onClick={() => setGranularity(opt.value)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                granularity === opt.value
+                  ? 'bg-sp-surface text-sp-fg shadow-sm'
+                  : 'text-sp-fg-dim hover:text-sp-fg'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </header>
       <div style={{ width: '100%', height: CHART_HEIGHT }}>
         <ResponsiveContainer width="100%" height={CHART_HEIGHT}>

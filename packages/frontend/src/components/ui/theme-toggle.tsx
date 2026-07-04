@@ -34,7 +34,7 @@ export function ThemeToggle(): React.JSX.Element {
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-sp-fg-dim transition-colors hover:bg-sp-surface-hover hover:text-sp-fg focus-visible:ring-2 focus-visible:ring-sp-accent"
+      className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-sp-fg-dim transition-colors hover:text-sp-fg focus-visible:ring-2 focus-visible:ring-sp-accent"
       aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
     >
       {theme === 'dark' ? (

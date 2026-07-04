@@ -260,17 +260,17 @@ describe('TimeseriesChart — chart render', () => {
 });
 
 describe('TimeseriesChart — granularity selector', () => {
-  it('renders three options: day, week, month', () => {
+  it('renders three buttons: day, week, month', () => {
     useTimeseriesState.data = { data: [buildBucket()] };
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
 
-    // The selector is a <select> with three options. We use
-    // the role combobox (the implicit ARIA role of a <select>).
-    const selector = screen.getByRole('combobox', { name: /granularidad/i });
-    expect(selector).toBeInTheDocument();
-    const options = within(selector as HTMLElement).getAllByRole('option');
-    expect(options.map((o) => (o as HTMLOptionElement).value)).toEqual(['day', 'week', 'month']);
+    // The selector is a radiogroup with three radio buttons.
+    const group = screen.getByRole('radiogroup', { name: /granularidad/i });
+    expect(group).toBeInTheDocument();
+    const buttons = within(group).getAllByRole('radio');
+    expect(buttons).toHaveLength(3);
+    expect(buttons.map((b) => b.textContent)).toEqual(['Día', 'Semana', 'Mes']);
   });
 
   it('defaults to "day"', () => {
@@ -278,73 +278,42 @@ describe('TimeseriesChart — granularity selector', () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
 
-    const selector = screen.getByRole('combobox', { name: /granularidad/i }) as HTMLSelectElement;
-    expect(selector.value).toBe('day');
+    const group = screen.getByRole('radiogroup', { name: /granularidad/i });
+    expect(within(group).getByRole('radio', { checked: true })).toHaveTextContent('Día');
   });
 
-  it('changing the granularity re-fires the query (driven by useTimeseries state)', () => {
+  it('changing the granularity re-fires the query (driven by useTimeseries state)', async () => {
     // The selector is wired to a local `granularity` state that
     // is passed as the `granularity` arg to `useTimeseries`.
     // We assert the change is reflected in the rendered
-    // selector value (the actual query call is verified at the
+    // selected button (the actual query call is verified at the
     // hook level in use-analytics.test.tsx).
     useTimeseriesState.data = { data: [buildBucket()] };
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
 
-    const selector = screen.getByRole('combobox', { name: /granularidad/i });
-    // Simulate the change via the native value setter so React
-    // picks it up (recharts + react state need the synthetic
-    // event, not a direct value mutation).
-    const setNativeValue = (el: Element, value: string) => {
-      const proto = Object.getPrototypeOf(el) as object;
-      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-      setter?.call(el, value);
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-    };
-    setNativeValue(selector, 'week');
-    expect((selector as HTMLSelectElement).value).toBe('week');
+    const user = userEvent.setup();
+    const group = screen.getByRole('radiogroup', { name: /granularidad/i });
+    const weekBtn = within(group).getByRole('radio', { name: /semana/i });
+    await user.click(weekBtn);
+    expect(within(group).getByRole('radio', { checked: true })).toHaveTextContent('Semana');
   });
 
-  it('exposes a "Tipo" label group and renders the selected option text', () => {
+  it('renders the heading with the day/week/month suffix matching the selected granularity', async () => {
+    // The "Clicks por …" heading reflects the chosen granularity.
     useTimeseriesState.data = { data: [buildBucket()] };
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
 
-    // The selector's options are human-readable Spanish labels.
-    const selector = screen.getByRole('combobox', { name: /granularidad/i });
-    const options = within(selector as HTMLElement).getAllByRole('option');
-    const labels = options.map((o) => (o as HTMLOptionElement).textContent);
-    expect(labels).toEqual(['Día', 'Semana', 'Mes']);
-  });
-
-  it('renders the heading with the day/week/month suffix matching the selected granularity', () => {
-    // The "Clicks por …" heading reflects the chosen granularity.
-    // The week / month / fallback branches in the ternary each
-    // need a click to flip the selector, then we re-query the
-    // heading text.
-    useTimeseriesState.data = { data: [buildBucket()] };
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { rerender } = render(<TimeseriesChart />, { wrapper: makeWrapper(qc) });
-
     expect(screen.getByRole('heading', { name: /clicks por día/i })).toBeInTheDocument();
 
-    // Re-render with `week` — the heading flips.
-    useTimeseriesState.data = { data: [buildBucket()] };
-    rerender(<TimeseriesChart />);
-    // jsdom's selector is uncontrolled; trigger a real change so
-    // the component picks the new granularity label.
-    const setNativeValue = (el: Element, value: string) => {
-      const proto = Object.getPrototypeOf(el) as object;
-      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-      setter?.call(el, value);
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-    };
-    const selector = screen.getByRole('combobox', { name: /granularidad/i });
-    setNativeValue(selector, 'week');
+    const user = userEvent.setup();
+    const group = screen.getByRole('radiogroup', { name: /granularidad/i });
+
+    await user.click(within(group).getByRole('radio', { name: /semana/i }));
     expect(screen.getByRole('heading', { name: /clicks por semana/i })).toBeInTheDocument();
 
-    setNativeValue(selector, 'month');
+    await user.click(within(group).getByRole('radio', { name: /mes/i }));
     expect(screen.getByRole('heading', { name: /clicks por mes/i })).toBeInTheDocument();
   });
 

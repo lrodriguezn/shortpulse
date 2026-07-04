@@ -7,7 +7,7 @@ export type ButtonSize = 'sm' | 'md';
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
-    'bg-sp-accent text-white hover:bg-sp-accent-hover focus-visible:ring-sp-accent disabled:bg-sp-fg-muted',
+    'bg-sp-accent text-sp-bg hover:bg-sp-accent-hover focus-visible:ring-sp-accent disabled:bg-sp-fg-muted',
   secondary:
     'bg-sp-surface text-sp-fg border border-sp-border hover:bg-sp-surface-hover focus-visible:ring-sp-accent disabled:bg-sp-bg-m1 disabled:text-sp-fg-muted',
   ghost:
@@ -22,7 +22,7 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 };
 
 const BASE_CLASSES =
-  'inline-flex items-center justify-center gap-2 rounded-md font-medium ' +
+  'inline-flex items-center justify-center gap-2 rounded-lg font-medium ' +
   'transition-colors focus:outline-none focus-visible:ring-2 ' +
   'focus-visible:ring-offset-2 focus-visible:ring-offset-sp-bg ' +
   'disabled:cursor-not-allowed';

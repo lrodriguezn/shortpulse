@@ -20,9 +20,12 @@ import { LinksTable } from './links-table.js';
 export function LinksPage(): React.JSX.Element {
   return (
     <section aria-labelledby="links-title" className="flex flex-col gap-6">
-      <h1 id="links-title" className="text-2xl font-semibold text-sp-fg">
-        Links
-      </h1>
+      <div className="flex flex-col gap-1">
+        <h1 id="links-title" className="text-[28px] font-bold tracking-tight text-sp-fg">
+          Tus enlaces
+        </h1>
+        <p className="text-sm text-sp-fg-dim">Gestiona y comparte tus enlaces acortados</p>
+      </div>
       <CreateLinkForm />
       <LinksTable />
     </section>

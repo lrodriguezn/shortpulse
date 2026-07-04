@@ -43,7 +43,7 @@ const columns = [
   columnHelper.accessor('slug', {
     header: 'Slug',
     cell: (info) => (
-      <span className="inline-block rounded bg-sp-accent-subtle px-1.5 py-0.5 font-mono text-xs text-sp-accent-hover">
+      <span className="inline-block rounded-md bg-sp-accent-subtle px-1.5 py-0.5 font-mono text-sm text-sp-accent-hover">
         {info.getValue()}
       </span>
     ),
@@ -189,8 +189,13 @@ export function LinksTable(): React.JSX.Element {
 
   return (
     <div className="flex flex-col gap-4">
-      <SearchBox value={searchInput} onChange={handleSearchChange} />
-      <div className="overflow-x-auto rounded-lg border border-sp-border bg-sp-surface">
+      <div className="flex items-center justify-between gap-4">
+        <SearchBox value={searchInput} onChange={handleSearchChange} />
+        <span className="inline-flex items-center rounded-md bg-sp-bg-m1 px-3 py-1 text-sm font-medium text-sp-fg-dim">
+          {query.data?.total ?? 0} enlaces
+        </span>
+      </div>
+      <div className="overflow-x-auto rounded-xl border border-sp-border bg-sp-surface">
         <table className="min-w-full divide-y divide-sp-border text-sm">
           <thead className="bg-sp-bg-m1">
             {table.getHeaderGroups().map((hg) => (
@@ -210,7 +215,7 @@ export function LinksTable(): React.JSX.Element {
                       key={header.id}
                       scope="col"
                       aria-sort={ariaSort}
-                      className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-sp-fg-muted"
+                      className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.8px] text-sp-fg-muted"
                     >
                       {canSort ? (
                         <button
@@ -230,7 +235,7 @@ export function LinksTable(): React.JSX.Element {
                 })}
                 <th
                   scope="col"
-                  className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-sp-fg-muted"
+                  className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-[0.8px] text-sp-fg-muted"
                 >
                   Acciones
                 </th>
@@ -243,11 +248,11 @@ export function LinksTable(): React.JSX.Element {
               return (
                 <tr key={row.id} className="hover:bg-sp-bg-surface-hover">
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2 align-middle text-sp-fg">
+                    <td key={cell.id} className="px-5 py-3.5 align-middle text-sp-fg">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
-                  <td className="px-3 py-2 align-middle">
+                  <td className="px-5 py-3.5 align-middle">
                     <div className="flex items-center justify-end gap-2">
                       <Button
                         size="sm"
@@ -335,21 +340,16 @@ function Pagination({
   onNext: () => void;
 }): React.JSX.Element {
   return (
-    <nav
-      aria-label="Paginaci\u00f3n de enlaces"
-      className="flex items-center justify-between text-sm text-sp-fg-muted"
-    >
-      <span>
-        P\u00e1gina {page} de {totalPages}
+    <nav aria-label="Paginaci\u00f3n de enlaces" className="flex items-center justify-center gap-3">
+      <Button size="sm" variant="secondary" onClick={onPrev} disabled={!canPrev}>
+        \u2190 Anterior
+      </Button>
+      <span className="rounded-md bg-sp-bg-m1 px-3 py-1 text-sm font-medium text-sp-fg">
+        {page} de {totalPages}
       </span>
-      <div className="flex gap-2">
-        <Button size="sm" variant="secondary" onClick={onPrev} disabled={!canPrev}>
-          Anterior
-        </Button>
-        <Button size="sm" variant="secondary" onClick={onNext} disabled={!canNext}>
-          Siguiente
-        </Button>
-      </div>
+      <Button size="sm" variant="secondary" onClick={onNext} disabled={!canNext}>
+        Siguiente \u2192
+      </Button>
     </nav>
   );
 }

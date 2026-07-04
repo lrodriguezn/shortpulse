@@ -30,6 +30,13 @@ const config: Config = {
           'error-subtle': 'var(--sp-error-subtle)',
         },
       },
+      boxShadow: {
+        'sp-sm': 'var(--sp-shadow-sm)',
+        'sp-md': 'var(--sp-shadow-md)',
+      },
+      fontSize: {
+        kpi: ['30px', { lineHeight: '36px', fontWeight: '700', letterSpacing: '-0.8px' }],
+      },
     },
   },
   plugins: [],

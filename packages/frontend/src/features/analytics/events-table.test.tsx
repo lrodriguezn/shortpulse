@@ -229,7 +229,7 @@ describe('EventsTable — filters', () => {
     // `displayedPage` we render before the next fetch lands is
     // still 5 — but the page state the user is "intending" is
     // now 1. We assert the displayed page is the server's.
-    expect(screen.getByText(/página 5 de 10/i)).toBeInTheDocument();
+    expect(screen.getByText(/5 de 10/i)).toBeInTheDocument();
   });
 
   it('forwards the country filter to the underlying query (renders it in the country input)', async () => {

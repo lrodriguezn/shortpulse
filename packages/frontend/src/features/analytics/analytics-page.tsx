@@ -31,9 +31,12 @@ import { TimeseriesChart } from './timeseries-chart.js';
 export function AnalyticsPage(): React.JSX.Element {
   return (
     <section aria-labelledby="analytics-title" className="flex flex-col gap-6">
-      <h1 id="analytics-title" className="text-2xl font-semibold text-sp-fg">
-        Analytics
-      </h1>
+      <div className="flex flex-col gap-1">
+        <h1 id="analytics-title" className="text-[28px] font-bold tracking-tight text-sp-fg">
+          Analíticas
+        </h1>
+        <p className="text-sm text-sp-fg-dim">Métricas y eventos de tus enlaces acortados</p>
+      </div>
       <KpiCards />
       <TimeseriesChart />
       <EventsTable />

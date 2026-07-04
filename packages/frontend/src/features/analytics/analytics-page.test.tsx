@@ -44,7 +44,7 @@ describe('AnalyticsPage', () => {
 
   it('renders a page heading for the Analytics section', () => {
     render(<AnalyticsPage />);
-    expect(screen.getByRole('heading', { name: /^analytics$/i, level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^analíticas$/i, level: 1 })).toBeInTheDocument();
   });
 
   it('composes the sections in the spec-locked order: KPIs → chart → table', () => {
@@ -62,6 +62,6 @@ describe('AnalyticsPage', () => {
 
   it('exposes a labelled region for the page content', () => {
     render(<AnalyticsPage />);
-    expect(screen.getByRole('region', { name: /^analytics$/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /^analíticas$/i })).toBeInTheDocument();
   });
 });

@@ -49,8 +49,8 @@ const columns = [
         <span
           className={
             isDeleted
-              ? 'font-mono text-xs italic text-sp-fg-muted'
-              : 'inline-block rounded bg-sp-accent-subtle px-1.5 py-0.5 font-mono text-xs text-sp-accent-hover'
+              ? 'font-mono text-sm italic text-sp-fg-muted'
+              : 'inline-block rounded-md bg-sp-accent-subtle px-1.5 py-0.5 font-mono text-sm text-sp-accent-hover'
           }
         >
           {label}
@@ -212,6 +212,32 @@ export function EventsTable(): React.JSX.Element {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <span className="inline-flex items-center rounded-md bg-sp-bg-m1 px-3 py-1 text-sm font-medium text-sp-fg-dim">
+          {query.data?.total ?? 0} eventos
+        </span>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-sp-fg-dim hover:text-sp-fg focus-visible:ring-2 focus-visible:ring-sp-accent"
+          aria-label="Filtrar eventos"
+          onClick={() => {
+            /* toggle filter panel — existing Filters component is always visible, this button is a visual indicator */
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          Filtros
+        </button>
+      </div>
       <Filters
         linkId={linkIdInput}
         onLinkIdChange={(e) => setLinkIdInput(e.target.value)}
@@ -222,7 +248,7 @@ export function EventsTable(): React.JSX.Element {
         dateTo={dateToInput}
         onDateToChange={handleDateToChange}
       />
-      <div className="overflow-x-auto rounded-lg border border-sp-border bg-sp-surface">
+      <div className="overflow-x-auto rounded-xl border border-sp-border bg-sp-surface">
         <table className="min-w-full divide-y divide-sp-border text-sm">
           <thead className="bg-sp-bg-m1">
             {table.getHeaderGroups().map((hg) => (
@@ -231,7 +257,7 @@ export function EventsTable(): React.JSX.Element {
                   <th
                     key={header.id}
                     scope="col"
-                    className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-sp-fg-muted"
+                    className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.8px] text-sp-fg-muted"
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
@@ -243,7 +269,7 @@ export function EventsTable(): React.JSX.Element {
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className="hover:bg-sp-bg-surface-hover">
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2 align-middle text-sp-fg">
+                  <td key={cell.id} className="px-5 py-3.5 align-middle text-sp-fg">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -338,21 +364,16 @@ function Pagination({
   onNext: () => void;
 }): React.JSX.Element {
   return (
-    <nav
-      aria-label="Paginación de eventos"
-      className="flex items-center justify-between text-sm text-sp-fg-muted"
-    >
-      <span>
-        Página {page} de {totalPages}
+    <nav aria-label="Paginación de eventos" className="flex items-center justify-center gap-3">
+      <Button size="sm" variant="secondary" onClick={onPrev} disabled={!canPrev}>
+        \u2190 Anterior
+      </Button>
+      <span className="rounded-md bg-sp-bg-m1 px-3 py-1 text-sm font-medium text-sp-fg">
+        {page} de {totalPages}
       </span>
-      <div className="flex gap-2">
-        <Button size="sm" variant="secondary" onClick={onPrev} disabled={!canPrev}>
-          Anterior
-        </Button>
-        <Button size="sm" variant="secondary" onClick={onNext} disabled={!canNext}>
-          Siguiente
-        </Button>
-      </div>
+      <Button size="sm" variant="secondary" onClick={onNext} disabled={!canNext}>
+        Siguiente \u2192
+      </Button>
     </nav>
   );
 }

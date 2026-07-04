@@ -33,7 +33,7 @@ describe('LinksPage', () => {
     render(<LinksPage />);
     // The page is the "/links" destination; a heading is the
     // spec-locked affordance for the section.
-    expect(screen.getByRole('heading', { name: /^links$/i, level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^tus enlaces$/i, level: 1 })).toBeInTheDocument();
   });
 
   it('renders the form before the table (create first, then list)', () => {
