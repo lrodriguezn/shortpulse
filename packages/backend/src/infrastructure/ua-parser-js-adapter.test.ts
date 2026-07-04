@@ -13,6 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { UaParserJsAdapter } from './ua-parser-js-adapter.js';
+import type { UaParser } from '../domain/ports/ua-parser.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -81,7 +82,7 @@ describe('UaParserJsAdapter — edge cases', () => {
 
 describe('UaParserJsAdapter — interface conformance', () => {
   it('satisfies the `UaParser` interface (compile-time + runtime)', () => {
-    const adapter: import('../domain/ports/ua-parser.js').UaParser = new UaParserJsAdapter();
+    const adapter: UaParser = new UaParserJsAdapter();
     expect(typeof adapter.parse).toBe('function');
   });
 });

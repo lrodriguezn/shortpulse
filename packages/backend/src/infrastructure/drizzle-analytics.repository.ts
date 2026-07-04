@@ -190,10 +190,17 @@ export class DrizzleAnalyticsRepository implements AnalyticsRepository {
       .groupBy(bucketExpr)
       .orderBy(asc(bucketExpr));
 
-    return rows.map((r) => ({
-      bucketStart: r.bucket instanceof Date ? r.bucket : new Date(r.bucket),
-      count: Number(r.count),
-    }));
+    return rows.map((r) => {
+      // The `bucket` column is a `date_trunc(...)` result — Drizzle
+      // surfaces it as a string in the postgres-js dialect (or a
+      // Date in some drivers). The constructor accepts both, so we
+      // route through `new Date(...)` unconditionally; if the
+      // driver hands us a Date it converts via toISOString then
+      // back, which is a few µs but well below the bucket cost.
+      const bucketRaw = r.bucket as unknown;
+      const bucketStart = bucketRaw instanceof Date ? bucketRaw : new Date(bucketRaw as string);
+      return { bucketStart, count: Number(r.count) };
+    });
   }
 }
 

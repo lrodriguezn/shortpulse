@@ -15,10 +15,11 @@
  * repository implementation in `drizzle-analytics.repository.ts` was
  * written to make them pass.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createAnalyticsEvent } from '../domain/entities/analytics-event.js';
 import { DrizzleAnalyticsRepository } from './drizzle-analytics.repository.js';
+import type { AnalyticsRepository } from '../domain/repositories/analytics-repository.js';
 
 import type { ShortPulseDb } from '../db/client.js';
 
@@ -44,7 +45,7 @@ function stringify(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(stringify).join(', ')}]`;
   if (typeof v === 'function') return `[fn ${(v as { name?: string }).name ?? 'anon'}]`;
   if (typeof v === 'object') {
-    const o = v as Record<string, unknown>;
+    const o = v as Record<string | symbol, unknown>;
     const symbols = Object.getOwnPropertySymbols(o);
     const baseNameSym = symbols.find((s) => s.toString() === 'Symbol(drizzle:BaseName)');
     if (baseNameSym) {
@@ -444,8 +445,7 @@ describe('DrizzleAnalyticsRepository — getTimeseries', () => {
 
 describe('DrizzleAnalyticsRepository — interface conformance', () => {
   it('satisfies the `AnalyticsRepository` interface (compile-time)', () => {
-    const repo: import('../domain/repositories/analytics-repository.js').AnalyticsRepository =
-      new DrizzleAnalyticsRepository({} as ShortPulseDb);
+    const repo: AnalyticsRepository = new DrizzleAnalyticsRepository({} as ShortPulseDb);
     expect(typeof repo.save).toBe('function');
     expect(typeof repo.list).toBe('function');
     expect(typeof repo.listWithLinkLabel).toBe('function');

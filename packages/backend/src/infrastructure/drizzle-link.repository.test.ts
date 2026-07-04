@@ -15,11 +15,12 @@
  * repository implementation in `drizzle-link.repository.ts` was
  * written to make them pass.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createLink } from '../domain/entities/link.js';
 import { SlugCollisionError } from '../domain/errors.js';
 import { DrizzleLinkRepository } from './drizzle-link.repository.js';
+import type { LinkRepository } from '../domain/repositories/link-repository.js';
 
 import type { ShortPulseDb } from '../db/client.js';
 
@@ -54,7 +55,7 @@ function stringify(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(stringify).join(', ')}]`;
   if (typeof v === 'function') return `[fn ${(v as { name?: string }).name ?? 'anon'}]`;
   if (typeof v === 'object') {
-    const o = v as Record<string, unknown>;
+    const o = v as Record<string | symbol, unknown>;
     // Drizzle PgTable: identified by the BaseName symbol.
     const symbols = Object.getOwnPropertySymbols(o);
     const baseNameSym = symbols.find((s) => s.toString() === 'Symbol(drizzle:BaseName)');
@@ -471,8 +472,7 @@ describe('DrizzleLinkRepository — interface conformance', () => {
     // compile. No runtime assertion needed beyond a `typeof` smoke
     // check so a future refactor that strips a method fails this
     // test (not just the typecheck).
-    const repo: import('../domain/repositories/link-repository.js').LinkRepository =
-      new DrizzleLinkRepository({} as ShortPulseDb);
+    const repo: LinkRepository = new DrizzleLinkRepository({} as ShortPulseDb);
     expect(typeof repo.findById).toBe('function');
     expect(typeof repo.findBySlug).toBe('function');
     expect(typeof repo.save).toBe('function');

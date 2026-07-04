@@ -19,11 +19,12 @@
  * adapter in `maxmind-geolocator.ts` was written to make them pass.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { MaxMindGeolocator } from './maxmind-geolocator.js';
+import type { Geolocator } from '../domain/ports/geolocator.js';
 
 import type { Reader } from 'maxmind';
 import type { CityResponse } from 'maxmind';
@@ -34,11 +35,14 @@ import type { CityResponse } from 'maxmind';
 
 /**
  * Build a mock MaxMind `Reader<CityResponse>` whose `.get()` returns
- * a canned object (or `null` for miss scenarios).
+ * a canned object (or `null` for miss scenarios). The response
+ * values are typed as `Record<string, unknown>` to keep the test
+ * fixture minimal (no required `geoname_id` etc.); the cast to
+ * `CityResponse | null` happens at the reader boundary.
  */
-function makeReader(responses: Map<string, CityResponse | null>): Reader<CityResponse> {
+function makeReader(responses: Map<string, Record<string, unknown> | null>): Reader<CityResponse> {
   return {
-    get: (ip: string) => responses.get(ip) ?? null,
+    get: (ip: string) => (responses.get(ip) ?? null) as unknown as CityResponse,
   } as unknown as Reader<CityResponse>;
 }
 
@@ -150,7 +154,7 @@ describe('MaxMindGeolocator — reader lookup', () => {
 
 describe('MaxMindGeolocator — interface conformance', () => {
   it('satisfies the `Geolocator` interface (compile-time + runtime)', () => {
-    const geo: import('../domain/ports/geolocator.js').Geolocator = new MaxMindGeolocator({
+    const geo: Geolocator = new MaxMindGeolocator({
       dbPath: '',
     });
     expect(typeof geo.lookup).toBe('function');
