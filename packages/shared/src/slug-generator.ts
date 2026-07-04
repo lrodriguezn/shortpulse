@@ -6,7 +6,11 @@
  *   - Input: optional `length` (defaults to `AUTO_SLUG_LENGTH = 7`).
  *   - Output: a string of exactly `length` characters drawn uniformly from
  *     `AUTO_SLUG_ALPHABET` (54 chars, mixed case + digits, see constants.ts).
- *   - RNG: `crypto.randomBytes` (Node built-in CSPRNG).
+ *   - RNG: `globalThis.crypto.getRandomValues` — a CSPRNG that ships in
+ *     every modern browser (Web Crypto) AND Node 19+. The shared package
+ *     MUST work in both runtimes (the FE bundle includes it via the
+ *     `@shortpulse/shared` Vite alias), so we use the standard global
+ *     instead of `node:crypto.randomBytes`.
  *
  * Modulo bias: 54 does not divide 256 evenly (`256 / 54 ≈ 4.74`), so
  * `randomByte % 54` would slightly bias toward the first 40 alphabet indices.
@@ -20,8 +24,25 @@
  *  - `openspec/specs/links/spec.md` requirement #5 (slug generation)
  *  - `openspec/changes/add-shortpulse-app/design.md` §8 (algorithm)
  */
-import { randomBytes } from 'node:crypto';
 import { AUTO_SLUG_ALPHABET, AUTO_SLUG_LENGTH } from './constants.js';
+
+/**
+ * Draw `n` random bytes from the platform CSPRNG.
+ *
+ * `globalThis.crypto.getRandomValues` is in every modern browser (Web
+ * Crypto) and in Node ≥ 19. The cast is safe in both runtimes — the
+ * returned object has the same `Uint8Array`-like shape (`buffer[i]` is
+ * a number in `[0, 256)`), which is all the rejection-sampling loop
+ * needs. We deliberately do NOT use `node:crypto.randomBytes` here:
+ * importing it would pull Node built-ins into the FE bundle, which
+ * Vite cannot tree-shake (the barrel re-export in `index.ts` keeps
+ * the module alive even when the FE doesn't use the generator).
+ */
+function getRandomBytes(n: number): Uint8Array {
+  const buf = new Uint8Array(n);
+  globalThis.crypto.getRandomValues(buf);
+  return buf;
+}
 
 /**
  * Largest multiple of `AUTO_SLUG_ALPHABET.length` (54) that fits in a byte (256).
@@ -48,9 +69,9 @@ export function generateRandomSlug(length: number = AUTO_SLUG_LENGTH): string {
   // safe and avoid a second `randomBytes` call.
   const out: string[] = [];
   while (out.length < length) {
-    const buf = randomBytes(length * 2);
+    const buf = getRandomBytes(length * 2);
     for (let i = 0; i < buf.length && out.length < length; i += 1) {
-      const byte = buf[i] as number; // randomBytes(1+) always fills the buffer
+      const byte = buf[i] as number; // getRandomBytes(1+) always fills the buffer
       if (byte < REJECT_THRESHOLD) {
         // SAFE: byte % ALPHABET_LEN ∈ [0, 53] which is always a valid index
         // into AUTO_SLUG_ALPHABET (a 54-char string). The non-null assertion
